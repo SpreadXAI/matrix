@@ -51,14 +51,21 @@ The plugin ([`.claude-plugin/`](.claude-plugin/)) bundles the `spreadx-agent` Sk
 
 ### Codex
 
-Codex is an MCP client with no Skill system; the tools' own descriptions carry the protocol. Add to `~/.codex/config.toml`:
+The repo ships a Codex plugin too ([`.codex-plugin/`](.codex-plugin/)) bundling the skill and the MCP server:
+
+```bash
+codex plugin marketplace add SpreadXAI/matrix
+# then open /plugins, search "SpreadX", Install
+```
+
+Or add the server manually to `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.spreadx]
 url = "https://mcp.spreadx.ai/"
 ```
 
-Then `codex mcp login spreadx`. Codex writes are gated by the **server-side** guard plus Codex's own confirm UI. Full notes: [`docs/codex-setup.md`](docs/codex-setup.md).
+Either way, authorize once with `codex mcp login spreadx`. The tools' own descriptions carry the dry-run/confirm protocol, so it holds even without the skill; Codex writes are gated by the **server-side** guard plus Codex's own confirm UI. Full notes: [`docs/codex-setup.md`](docs/codex-setup.md).
 
 ### Standalone harness (scripts / headless)
 
@@ -111,7 +118,8 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 **Components in this repo:**
 
 - `.claude-plugin/` — the Claude Code plugin (marketplace + manifest) bundling the Skill and MCP server
-- `.claude/skills/spreadx-agent/SKILL.md` — the Skill (UX phrasing over the tools)
+- `.codex-plugin/` — the Codex plugin (manifest + `mcp.json`) — same Skill and MCP server, for Codex
+- `.claude/skills/spreadx-agent/SKILL.md` — the Skill (UX phrasing over the tools), shared by both plugins
 - `.mcp.json` — project-mode MCP mount (for cloning this repo directly)
 - `docs/codex-setup.md` — Codex setup
 - `src/core/writeGate.ts` — the deterministic `canUseTool` safety gate

@@ -1,0 +1,37 @@
+{
+  "name": "spreadx-matrix",
+  "version": "0.1.0",
+  "description": "Operate a SpreadX account from Codex — balance, orders, follow, and like/retweet/comment plans — via the spreadx MCP server, with a dry-run→confirm safety protocol.",
+  "author": {
+    "name": "SpreadX",
+    "email": "oss@spreadx.ai",
+    "url": "https://github.com/SpreadXAI"
+  },
+  "homepage": "https://github.com/SpreadXAI/matrix",
+  "repository": "https://github.com/SpreadXAI/matrix",
+  "keywords": [
+    "spreadx",
+    "mcp",
+    "social-growth",
+    "agent",
+    "oauth"
+  ],
+  "skills": "./.claude/skills",
+  "mcpServers": "./.codex-plugin/mcp.json",
+  "interface": {
+    "displayName": "SpreadX Matrix",
+    "shortDescription": "Operate a SpreadX account: balance, orders, follow, like",
+    "longDescription": "Check your SpreadX balance and orders, and create follow / like-retweet-comment growth plans, through the spreadx MCP server. Every write is previewed (dry-run) and confirmed before it runs.",
+    "developerName": "SpreadX",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/SpreadXAI/matrix",
+    "defaultPrompt": [
+      "Check my SpreadX balance",
+      "Add 200 crypto English-speaking followers for @laura"
+    ]
+  }
+}
