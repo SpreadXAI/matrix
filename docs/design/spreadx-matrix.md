@@ -11,97 +11,86 @@ prerequisites:
 
 # SpreadX Matrix (`spreadx-matrix`)
 
-本仓库是 SpreadX「agent 代用户操作」能力的**消费侧**。`spreadx-platform` 负责 MCP **服务端**
-(OAuth Resource Server `spreadx-mcp-user`,域名 `https://mcp.spreadx.ai/`);本仓库负责一切**调用**它的东西:
-让 Claude / Codex agent 在一次 OAuth 授权后,**查余额、查订单、涨粉(follow)、互动(like/retweet/comment)**。
+This repo is the **consumer side** of SpreadX's "agent acts on behalf of the user" capability. `spreadx-platform` owns the MCP **server** (the OAuth Resource Server `spreadx-mcp-user` at `https://mcp.spreadx.ai/`); this repo owns everything that **calls** it: letting a Claude / Codex agent, after one OAuth authorization, **check balance, check orders, grow followers (follow), and engage (like/retweet/comment)**.
 
-> 与 `spreadx-platform/docs/design/spreadx-mcp-user.md` 是同一系统的两端:那边定义工具契约与鉴权,
-> 这边只做**接入 + 编排 + Skill 润色 + 确定性写闸**。**不复制任何服务端业务逻辑或授权判断。**
+> This and `spreadx-platform/docs/design/spreadx-mcp-user.md` are the two ends of one system: that side defines the tool contract and authorization; this side only does **integration + orchestration + Skill polish + a deterministic write gate**. **It copies no server business logic and makes no authorization decisions of its own.**
 
-## 设计原则(本次复查基线:防过度设计)
+## Design principles (this review's baseline: avoid over-engineering)
 
-1. **契约在工具,Skill 只润色** —— dry-run / confirm / shortfall>10% 拒绝的硬契约写在**服务端工具
-   description**里。Codex 无需 skill 即遵守;Claude 端 Skill 只补话术。**只维护一份契约。**
-2. **安全边界是确定性代码,不是 LLM** —— headless 路径唯一能批准真实写(`confirm=true`)的是 harness 的
-   `canUseTool` 闸(人工批准 + 金额上限)。模型可任意*提议*,但永远无法*执行*被闸拒绝的写。
-3. **客户端不重复服务端鉴权** —— scope 校验、shortfall>10% 拒绝、限流、60s JWT TTL 全在服务端。客户端
-   闸只加「人在环」+「金额上限」,且只对 headless 自治路径。
-4. **能用 SDK 自带的就不引依赖** —— 本地 mock 用 Agent SDK 的**进程内 MCP server**,不引
-   `@modelcontextprotocol/sdk`、不手搓 http transport。
+1. **The contract lives in the tools; the Skill only polishes.** The hard contract — dry-run / confirm / reject-if-shortfall>10% — is written into the **server tools' own descriptions**. Codex obeys it with no skill; the Claude-side Skill only adds phrasing. **One contract, maintained once.**
+2. **The safety boundary is deterministic code, not the LLM.** On the headless path the only thing that can authorize a real write (`confirm=true`) is the harness `canUseTool` gate (human approval + amount caps). The model may *propose* anything but can never *execute* a write the gate denies.
+3. **The client does not duplicate server authorization.** Scope checks, the shortfall>10% rejection, rate limiting, and the 60s JWT TTL all live server-side. The client gate adds only "human-in-the-loop" + "amount caps", and only on the headless autonomous path.
+4. **Use what the SDK already provides instead of adding dependencies.** The local mock uses the Agent SDK's own **in-process MCP server** — no `@modelcontextprotocol/sdk`, no hand-rolled HTTP transport.
 
-## 三个交付物
+## Three deliverables
 
 ```
-                         ┌─ Claude Code / Codex (编辑器内,本身就是 MCP client) ─┐
- 编辑器路径  ──────────▶ │  .mcp.json / config.toml 挂载远程 spreadx           │
-                         │  + spreadx-agent Skill(仅 Claude 端,UX 润色)      │
-                         └─────────────────────────────────────────────────────┘
-                         ┌─ 独立 harness (本仓库 src/) ────────────────────────┐
- 程序化/无人值守路径 ─▶ │  Claude Agent SDK · query()                          │
-                         │   ├ mcpServers: { spreadx: type http, Bearer }       │
-                         │   ├ skills: spreadx-agent                            │
-                         │   └ canUseTool: 确定性写闸(批准 + caps)            │  ← 唯一 headless 安全闸
-                         │  matrix CLI(自然语言透传)                          │
-                         └─────────────────────────────────────────────────────┘
-                         ┌─ 本地 dev mock (dev-only, 用完即弃) ─────────────────┐
- 离线开发 ────────────▶ │  Agent SDK 进程内 MCP server:get_balance +          │
-                         │  create_follow_plan(镜像服务端 shortfall 守卫)      │
-                         └─────────────────────────────────────────────────────┘
-                                          │ ③ 三者都最终打到 →
-                                          ▼  https://mcp.spreadx.ai/ (platform 拥有)
+                          ┌─ Claude Code / Codex (in-editor; already an MCP client) ─┐
+ Editor path  ──────────▶ │  .mcp.json / config.toml mounts the remote spreadx       │
+                          │  + spreadx-agent Skill (Claude only; UX polish)          │
+                          └──────────────────────────────────────────────────────────┘
+                          ┌─ Standalone harness (this repo, src/) ───────────────────┐
+ Programmatic / headless ▶│  Claude Agent SDK · query()                              │
+                          │   ├ mcpServers: { spreadx: type http, Bearer }           │
+                          │   ├ skills: spreadx-agent                                │
+                          │   └ canUseTool: deterministic write gate (approval+caps) │  ← the only headless safety gate
+                          │  matrix CLI (free-text passthrough)                      │
+                          └──────────────────────────────────────────────────────────┘
+                          ┌─ Local dev mock (dev-only, throwaway) ───────────────────┐
+ Offline dev ───────────▶ │  Agent SDK in-process MCP server: get_balance +          │
+                          │  create_follow_plan (mirrors the server shortfall guard) │
+                          └──────────────────────────────────────────────────────────┘
+                                          │ all three ultimately hit →
+                                          ▼  https://mcp.spreadx.ai/ (owned by the platform)
 ```
 
-### 1. 编辑器路径(config + Skill)
-- `.mcp.json`(Claude Code):`{ spreadx: { type: "http", url: "https://mcp.spreadx.ai/" } }`。
-  **OAuth 由 Claude Code 自己跑**(服务端 401 + `WWW-Authenticate resource_metadata` 触发 DCR + 浏览器授权),配置里**不放 token**。
-- `.claude/skills/spreadx-agent/SKILL.md`:superpowers 格式,balance/orders/follow/like 话术 + 两步协议 + shortfall 分档。**纯 UX,非功能必需。**
-- `docs/codex-setup.md`:Codex `config.toml` 片段 + `codex mcp login`。
-  **Codex 路径的写保护 = 服务端守卫 + Codex 自带确认 UI,不经过 matrix 的 canUseTool 闸**(闸只在 harness 里)。
+### 1. Editor path (config + Skill)
+- `.mcp.json` (Claude Code): `{ spreadx: { type: "http", url: "https://mcp.spreadx.ai/" } }`.
+  **OAuth is run by Claude Code itself** (the server's 401 + `WWW-Authenticate resource_metadata` triggers DCR + browser authorization); **no token in the config.**
+- `skills/spreadx-agent/SKILL.md`: superpowers format — balance/orders/follow/like phrasing + the two-step protocol + shortfall bands. **Pure UX, not functionally required.**
+- `docs/codex-setup.md`: the Codex `config.toml` snippet + `codex mcp login`.
+  **Codex's write protection = the server-side guard + Codex's own confirm UI; it does not pass through matrix's canUseTool gate** (that gate lives only in the harness).
 
-### 2. 独立 harness(Agent SDK)
-- `runAgent(prompt)`:一次 headless `query()`,挂 spreadx MCP(`type: "http"` + `Authorization: Bearer`)、加载 `spreadx-agent` skill、用 `makeWriteGate(...)` 当 `canUseTool`。
-- `matrix` CLI:自然语言透传(`matrix "查余额"` / `matrix "帮 @laura 加 200 粉"`),交互模式下写操作走 stdin 批准。
-- **确定性写闸语义**:
-  - 读工具(`get_balance`/`list_orders`/`get_order`/`get_plan_status`)→ 直接放行。
-  - 写工具 `confirm` 非 true(预览)→ 放行(预览无副作用)。
-  - 写工具 `confirm=true` → 先查 caps(超 `MATRIX_MAX_FOLLOW`/`MATRIX_MAX_ENGAGEMENT` 直接拒);interactive → 问人;headless → 仅当 `MATRIX_AUTO_APPROVE=1` 且未超 cap 才放行,否则拒。
-  - 非 `mcp__spreadx__*` 工具 → 拒(白名单)。
+### 2. Standalone harness (Agent SDK)
+- `runAgent(prompt)`: one headless `query()` that mounts the spreadx MCP (`type: "http"` + `Authorization: Bearer`), loads the `spreadx-agent` skill, and uses `makeWriteGate(...)` as `canUseTool`.
+- `matrix` CLI: free-text passthrough (`matrix "Check my balance"` / `matrix "Add 200 followers for @laura"`); in interactive mode writes go through a stdin approval.
+- **Deterministic write-gate semantics**:
+  - Read tools (`get_balance`/`list_orders`/`get_order`/`get_plan_status`) → allow directly.
+  - A write tool with `confirm` not true (preview) → allow (the preview has no side effects).
+  - A write tool with `confirm=true` → check caps first (over `MATRIX_MAX_FOLLOW`/`MATRIX_MAX_ENGAGEMENT` → deny); interactive → ask the human; headless → allow only if `MATRIX_AUTO_APPROVE=1` and within cap, else deny.
+  - Any tool outside the `mcp__spreadx__*` namespace → deny (allowlist). An *unknown* spreadx tool fails safe: it is treated as a write and always requires approval.
 
-### 3. 本地 dev mock(dev-only)
-- Agent SDK 进程内 MCP server,只实现 **`get_balance` + `create_follow_plan`**(够跑通读 + 两步写)。
-  `create_follow_plan` 镜像服务端「`confirm=true` 且 shortfall>10% 则拒」的守卫。
-- 仅当 `SPREADX_MCP_URL` 指向 mock 时启用。**平台 staging 上线后即可废弃。**
+### 3. Local dev mock (dev-only)
+- An Agent SDK in-process MCP server that implements only **`get_balance` + `create_follow_plan`** (enough to exercise a read + the two-step write).
+  `create_follow_plan` mirrors the server's "reject `confirm=true` when shortfall>10%" guard.
+- Active only when `SPREADX_MCP_URL` points at the mock. **Discardable once platform staging is live.**
 
-## 鉴权模型(谁拿 token)
+## Authorization model (who gets the token)
 
-| 路径 | 取 token 方式 | 备注 |
+| Path | How the token is obtained | Notes |
 |---|---|---|
-| Claude Code(`.mcp.json`) | 客户端自动 OAuth(DCR + PKCE + 浏览器) | 零配置 token |
-| Codex(`config.toml`) | `codex mcp login spreadx` | 需较新 Codex |
-| **harness(v1)** | 环境变量 `SPREADX_ACCESS_TOKEN` **手工粘贴**一个短时(~15min)access token | 见下「已知限制」 |
+| Claude Code (`.mcp.json`) | client-managed OAuth (DCR + PKCE + browser) | zero-config token |
+| Codex (`config.toml`) | `codex mcp login spreadx` | needs a recent Codex |
+| **harness (v1)** | the `SPREADX_ACCESS_TOKEN` env var — **paste** a short-lived (~15min) access token | see "Known limitation" below |
 
-**已知限制 / 明确不做(YAGNI)**:harness v1 **不**内建 OAuth(不做 DCR / PKCE / 浏览器 / refresh 存储)。
-真正的无人值守需要一个 `matrix login`(浏览器授权一次→存 refresh token→每次跑前用 AS `/oauth/token`
-换 access token)。**该流程显式推迟**到「harness 真要长期跑」时再做,避免现在造一套 OAuth 客户端。
+**Known limitation / explicitly not done (YAGNI):** harness v1 does **not** build in OAuth (no DCR / PKCE / browser / refresh-token storage). True unattended use needs a `matrix login` (authorize once in the browser → store the refresh token → exchange it at the AS `/oauth/token` for an access token before each run). **That flow is explicitly deferred** until the harness genuinely needs to run long-term, to avoid building a whole OAuth client now.
 
 ## Scope / Not in scope
 
-**In scope**:`.mcp.json`、`spreadx-agent` Skill、Codex 文档、Agent SDK harness + CLI、确定性写闸、进程内 dev mock、确定性闸的测试(不依赖 LLM)。
+**In scope:** `.mcp.json`, the `spreadx-agent` Skill, the Codex doc, the Agent SDK harness + CLI, the deterministic write gate, the in-process dev mock, and the gate's tests (which do not depend on the LLM).
 
-**Not in scope**:MCP 服务端(平台拥有)、OAuth AS / DCR / refresh 客户端(v1)、生产密钥管理、复刻服务端 shortfall/scope 逻辑、`list_orders`/`get_order`/`get_plan_status`/`create_engagement_plan` 的 mock(端到端验证走平台 staging)。
+**Not in scope:** the MCP server (owned by the platform), the OAuth AS / DCR / refresh client (v1), production secret management, re-implementing the server's shortfall/scope logic, and mocks for `list_orders`/`get_order`/`get_plan_status`/`create_engagement_plan` (end-to-end verification runs against platform staging).
 
-## 跨仓库依赖与切换
+## Cross-repo dependency and cutover
 
-`.mcp.json` 与 harness 连**真实**服务器,需 `spreadx-platform` 完成 **Phase B.4**(FastMCP streamable-http
-transport)并部署 `mcp.spreadx.ai`。在那之前:编辑器/harness 跑本地 dev mock;确定性写闸与核心逻辑用单测全覆盖。
-**切换 = 改一个环境变量 `SPREADX_MCP_URL`**,无代码改动。
+`.mcp.json` and the harness reach the **real** server only once `spreadx-platform` finishes **Phase B.4** (FastMCP streamable-http transport) and deploys `mcp.spreadx.ai`. Until then the editor/harness run the local dev mock; the deterministic write gate and core logic are fully covered by unit tests. **Cutover = change one env var, `SPREADX_MCP_URL`**, with no code change.
 
-## 安全模型(三层,各管各的)
+## Security model (three layers, each with its own job)
 
-| 层 | 由谁强制 | 管什么 |
+| Layer | Enforced by | What it covers |
 |---|---|---|
-| 服务端(权威) | `spreadx-mcp-user` | scope 校验、shortfall>10% 拒 confirm、限流、60s platform-JWT TTL、吊销在 AS |
-| harness 写闸(确定性) | 本仓库 `canUseTool` | 真实写前的人工批准 + 金额上限;**headless 唯一安全闸** |
-| 编辑器原生确认 | Claude plan mode / Codex confirm | interactive 第二道人工闸 |
+| Server (authoritative) | `spreadx-mcp-user` | scope checks, reject `confirm` when shortfall>10%, rate limiting, the 60s platform-JWT TTL, revocation at the AS |
+| Harness write gate (deterministic) | this repo's `canUseTool` | human approval + amount caps before a real write; **the only headless safety gate** |
+| Editor-native confirmation | Claude plan mode / Codex confirm | the second human gate in interactive use |
 
-客户端**不**复制服务端的任何授权判断;闸只补「人在环 + caps」,且只针对自治路径。
+The client does **not** replicate any of the server's authorization decisions; the gate only adds "human-in-the-loop + caps", and only for the autonomous path.
