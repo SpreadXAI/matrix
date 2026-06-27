@@ -26,8 +26,8 @@ async function main() {
   }
 
   if (argv[0] === "logout") {
-    const { FileTokenStore } = await import("../auth/tokenStore.js");
-    await new FileTokenStore().clear(config.mcpUrl);
+    const { defaultTokenStore } = await import("../auth/store.js");
+    await defaultTokenStore().clear(config.mcpUrl);
     // eslint-disable-next-line no-console
     console.log(`Logged out of ${config.mcpUrl}.`);
     return;

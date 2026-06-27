@@ -5,7 +5,8 @@ import { makeWriteGate } from "../core/writeGate.js";
 import { ALLOWED_READ } from "../core/tools.js";
 import { createMockServer } from "../mock/server.js";
 import { resolveAccessToken } from "../auth/resolve.js";
-import { FileTokenStore, type TokenStore } from "../auth/tokenStore.js";
+import { defaultTokenStore } from "../auth/store.js";
+import type { TokenStore } from "../auth/tokenStore.js";
 
 const SYSTEM_APPEND = `You operate a SpreadX account via the mcp__spreadx__* tools.
 ALWAYS preview a write tool with confirm:false first, present the shortfall band, and only
@@ -28,7 +29,7 @@ export async function runAgent(
   const canUseTool: CanUseTool = (toolName, input, _options) => gate(toolName, input);
 
   // env token → stored credentials (refreshed) → "run matrix login"; mock needs none.
-  const accessToken = await resolveAccessToken(config, { store: opts.store ?? new FileTokenStore() });
+  const accessToken = await resolveAccessToken(config, { store: opts.store ?? defaultTokenStore() });
 
   const mcpServers =
     config.mcpUrl === "mock"

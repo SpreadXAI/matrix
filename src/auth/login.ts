@@ -3,7 +3,8 @@ import { spawn } from "node:child_process";
 import type { AddressInfo } from "node:net";
 import { discover, registerClient, buildAuthorizeUrl, exchangeCode, type AsMetadata, type FetchFn } from "./oauth.js";
 import { generatePkce, randomState, type Pkce } from "./pkce.js";
-import { FileTokenStore, type TokenStore } from "./tokenStore.js";
+import { defaultTokenStore } from "./store.js";
+import type { TokenStore } from "./tokenStore.js";
 
 const SCOPE = "balance:read orders:read plans:write offline_access";
 
@@ -85,7 +86,7 @@ export async function login(
   deps: { store?: TokenStore; fetchFn?: FetchFn; openBrowser?: (url: string) => void } = {},
 ): Promise<void> {
   const f = deps.fetchFn ?? fetch;
-  const store = deps.store ?? new FileTokenStore();
+  const store = deps.store ?? defaultTokenStore();
   const meta = await discover(mcpUrl, f);
   const { code, redirectUri, pkce, clientId } = await runLoopbackFlow(meta, mcpUrl, f, deps.openBrowser ?? openDefault);
   const tok = await exchangeCode(
