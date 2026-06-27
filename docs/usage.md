@@ -70,14 +70,21 @@ The **`spreadx-agent`** Skill auto-loads from `.claude/skills/` when your reques
 
 ### Codex
 
-Codex is an MCP client with no Skill system — the dry-run/confirm contract is carried by each tool's own `description`, so Codex follows it directly. **Codex writes are gated by the server-side guard + Codex's own confirm UI, not by this repo's `canUseTool` gate** (that's harness-only).
+Codex is an MCP client and loads skills natively, but the dry-run/confirm contract is carried by each tool's own `description`, so it holds with or without the skill. **Codex writes are gated by the server-side guard + Codex's own confirm UI, not by this repo's `canUseTool` gate** (that's harness-only).
 
-Add to `~/.codex/config.toml`:
+**Plugin (recommended)** — the repo ships a Codex plugin ([`.codex-plugin/`](../.codex-plugin/)) bundling the skill and MCP server:
+```bash
+codex plugin marketplace add SpreadXAI/matrix
+# then open /plugins, search "SpreadX", Install
+```
+
+**Manual** — add the server to `~/.codex/config.toml`:
 ```toml
 [mcp_servers.spreadx]
 url = "https://mcp.spreadx.ai/"
 ```
-Then `codex mcp login spreadx`. Full notes: [`docs/codex-setup.md`](codex-setup.md).
+
+Either way, authorize once: `codex mcp login spreadx`. Full notes: [`docs/codex-setup.md`](codex-setup.md).
 
 ---
 
