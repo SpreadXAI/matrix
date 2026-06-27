@@ -43,4 +43,8 @@ describe("makeWriteGate", () => {
     const d = await makeWriteGate({ mode: "headless", caps, autoApproveWrites: true })("mcp__spreadx__create_follow_plan", { username: "laura", count: 200, confirm: true });
     expect(d.behavior).toBe("allow");
   });
+  it("denies confirm=true when count is non-numeric (fail closed)", async () => {
+    const d = await makeWriteGate({ mode: "interactive", caps, approve: async () => true })("mcp__spreadx__create_follow_plan", { username: "laura", count: "abc" as unknown as number, confirm: true });
+    expect(d).toMatchObject({ behavior: "deny" });
+  });
 });
