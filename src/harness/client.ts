@@ -29,12 +29,17 @@ export async function runAgent(
   // Adaptation from brief: CanUseTool requires a 3rd `options` argument; gate ignores it.
   const canUseTool: CanUseTool = (toolName, input, _options) => gate(toolName, input);
 
+  if (config.mcpUrl !== "mock" && !config.bearerToken) {
+    throw new Error("SPREADX_ACCESS_TOKEN is required when SPREADX_MCP_URL is not 'mock'");
+  }
+
   const mcpServers =
     config.mcpUrl === "mock"
       ? { spreadx: createMockServer() }
       : { spreadx: { type: "http" as const, url: config.mcpUrl, ...(config.bearerToken ? { headers: { Authorization: `Bearer ${config.bearerToken}` } } : {}) } };
 
-  let finalText = "";
+  let finalText: string | null = null;
+  let failureSubtype: string | null = null;
   for await (const message of query({
     prompt,
     options: {
@@ -48,10 +53,14 @@ export async function runAgent(
       maxTurns: 12,
     },
   })) {
-    // Adaptation from brief: SDKResultSuccess.result is string (not optional); cast precisely.
-    if (message.type === "result" && message.subtype === "success") {
-      finalText = (message as SDKResultSuccess).result;
+    if (message.type === "result") {
+      // Adaptation from brief: SDKResultSuccess.result is string (not optional); cast precisely.
+      if (message.subtype === "success") finalText = (message as SDKResultSuccess).result;
+      else failureSubtype = message.subtype;
     }
+  }
+  if (finalText === null) {
+    throw new Error(`agent run did not succeed: ${failureSubtype ?? "no result message"}`);
   }
   return finalText;
 }

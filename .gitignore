@@ -3,3 +3,4 @@ dist/
 .env
 .mcp.local.json
 *.log
+.claude/settings.local.json
