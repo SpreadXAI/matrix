@@ -1,83 +1,103 @@
-# spreadx-matrix
+# SpreadX Matrix
 
-**Agent client for the SpreadX end-user MCP** — a Claude/Codex Skill plus an MCP client (editor config + a standalone harness) that lets an AI agent, after one OAuth authorization, operate a user's SpreadX account: **check balance & orders, and run follow / like-retweet-comment growth plans**.
+**Operate a SpreadX account from your AI agent.** Install one plugin, authorize once in the browser, then just ask — *"查一下我的余额"*, *"帮 @laura 加 200 个 crypto 英文粉"*, *"给这条推点 50 个赞"* — and Claude (or Codex) does it through the **spreadx MCP server**, with a dry-run preview and your approval before any real write.
 
-> This repo is the **consumer side**. The MCP **server** (`spreadx-mcp-user`, an OAuth Resource Server at `https://mcp.spreadx.ai/`) lives in **`spreadx-platform`**. This repo owns everything that *calls* it: the Skill, the editor wiring, and a programmatic harness with a deterministic write gate. It copies no server business logic and makes no authorization decisions of its own.
-
----
-
-## Why this exists
-
-A SpreadX user wants to say *"帮 @laura 加 200 个 crypto 英文粉"* to their AI agent and have it happen — safely, on their behalf, without pasting API keys. The platform exposes that capability as MCP tools behind OAuth. This repo makes any MCP-capable agent (Claude Code, Claude Desktop, Codex) able to use them, and adds the one thing a server can't: a **client-side, deterministic guardrail** so an autonomous agent can never commit a real write the user didn't approve.
-
-Two design principles, inherited from the platform's contract:
-
-- **The contract lives in the tools, the Skill only polishes.** The dry-run → confirm → shortfall protocol is encoded in the MCP tools' own descriptions (server-side), so Codex obeys it with no Skill at all. The Claude Skill here is pure UX phrasing. One contract, two clients.
-- **Safety is deterministic, not the LLM.** On the headless path the *only* authorizer of a real write is a plain `canUseTool` function (human approval + amount caps, fail-closed). The model may propose anything; it can never execute a denied write.
+> This repo is the **client** side. The MCP **server** (`spreadx-mcp-user`, an OAuth Resource Server at `https://mcp.spreadx.ai/`) lives in **`spreadx-platform`**. This repo ships the Skill, the MCP wiring, and a standalone harness — it copies no server logic and makes no authorization decisions of its own.
 
 ---
 
-## Architecture (client side)
+## Quickstart
+
+**Claude Code** — install the plugin, then ask:
 
 ```
-                       ┌─ Claude Code / Codex (your editor — already an MCP client) ─┐
- Editor path  ───────▶ │  .mcp.json / config.toml  mounts the remote spreadx server  │
-                       │  + spreadx-agent Skill (Claude only; UX phrasing)           │
-                       └─────────────────────────────────────────────────────────────┘
-                       ┌─ Standalone harness (src/) ────────────────────────────────┐
- Programmatic /        │  Claude Agent SDK · query()                                 │
- headless path ──────▶ │   ├ mcpServers  → remote (Bearer) or in-process mock        │
-                       │   ├ skills: spreadx-agent                                   │
-                       │   └ canUseTool: deterministic write gate (approval + caps)  │  ← sole headless write authorizer
-                       │  `matrix "<natural language>"`  CLI                         │
-                       └─────────────────────────────────────────────────────────────┘
-                                          │  all three terminate at →
-                                          ▼  https://mcp.spreadx.ai/   (owned by spreadx-platform)
+/plugin marketplace add SpreadXAI/matrix
+/plugin install spreadx-matrix@spreadx-matrix
 ```
 
----
-
-## Two ways to use it
-
-| | **Editor path** | **Standalone harness** |
-|---|---|---|
-| For | Interactive use inside Claude Code / Codex | Scripts, batch, headless automation |
-| Auth | Client-managed OAuth (browser, once) | Paste a short-lived access token via env |
-| Safety gate | Editor's own approval UI + server guard | Deterministic `canUseTool` gate + server guard |
-| Setup | Drop in `.mcp.json` / `config.toml` | `pnpm install` + `.env` + `matrix …` |
-| Skill | `spreadx-agent` auto-loads (Claude) | Same Skill, loaded by the SDK |
-
-Full step-by-step for both: **[`docs/usage.md`](docs/usage.md)**.
-
-### Quick start — Claude Code (editor)
-
-The repo ships [`.mcp.json`](.mcp.json) already pointing at the server. Open this repo in Claude Code, then on first tool use Claude Code runs the OAuth flow (a browser authorize, once). The `spreadx-agent` Skill auto-loads when you ask about balance / orders / follow / like. Then just ask:
+That registers the `spreadx` MCP server **and** the `spreadx-agent` Skill. On first use a browser window opens for a one-time OAuth authorization. Then:
 
 ```
 查一下我的余额
 帮 @laura 加 200 个 crypto 英文粉
-给这条推 https://x.com/.../status/123 点 50 个赞
 ```
 
-### Quick start — Codex (editor)
+That's it. Read on for Codex, the standalone harness, and how the safety gate works.
 
-Codex has no Skill system; the tools' own descriptions carry the protocol. See **[`docs/codex-setup.md`](docs/codex-setup.md)** — add the server to `~/.codex/config.toml` and `codex mcp login spreadx`.
+---
 
-### Quick start — standalone harness
+## How it works
+
+You speak in plain language; the agent does **not** fire off a destructive write blindly. The `spreadx-agent` Skill (and, for clients without skills, the MCP tools' own descriptions) enforce a **two-step protocol**: every write is first run as a **dry-run preview** (pool size, how many accounts would be selected, shortfall, ETA), shown to you, and only executed after you approve. Reads (balance, orders, plan status) run directly.
+
+The protocol lives in the tools, so **Codex obeys it with no Skill at all**. The Claude Skill is pure phrasing on top. And in the standalone harness, a deterministic `canUseTool` gate — not the model — is the final authority on whether a real write runs.
+
+---
+
+## Installation
+
+The capability is two things: a **Skill** (phrasing/UX) and the **`spreadx` MCP server** (the actual tools). How you install them depends on your client.
+
+### Claude Code (plugin — installs both)
+
+```
+/plugin marketplace add SpreadXAI/matrix
+/plugin install spreadx-matrix@spreadx-matrix
+```
+
+The plugin ([`.claude-plugin/`](.claude-plugin/)) bundles the `spreadx-agent` Skill and registers the remote MCP server. First tool use triggers the one-time browser OAuth (login via Privy, approve scopes). No tokens to paste, nothing at rest.
+
+> Prefer not to use the plugin? Just register the server — `claude mcp add --transport http spreadx https://mcp.spreadx.ai/` — and optionally copy `.claude/skills/spreadx-agent/` into your project's `.claude/skills/`.
+
+### Codex
+
+Codex is an MCP client with no Skill system; the tools' own descriptions carry the protocol. Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.spreadx]
+url = "https://mcp.spreadx.ai/"
+```
+
+Then `codex mcp login spreadx`. Codex writes are gated by the **server-side** guard plus Codex's own confirm UI. Full notes: [`docs/codex-setup.md`](docs/codex-setup.md).
+
+### Standalone harness (scripts / headless)
+
+A `matrix` CLI that drives the agent programmatically, with the deterministic write gate built in.
 
 ```bash
+git clone https://github.com/SpreadXAI/matrix && cd matrix
 pnpm install
 cp .env.example .env          # set ANTHROPIC_API_KEY; SPREADX_MCP_URL=mock for offline dev
 node --env-file=.env --import tsx src/harness/cli.ts "查一下我的余额"
 ```
 
-`SPREADX_MCP_URL=mock` runs against a built-in in-process mock (no platform, no token needed) — ideal for trying the flow today. Point it at the real server (and set `SPREADX_ACCESS_TOKEN`) once the platform is deployed.
+`SPREADX_MCP_URL=mock` runs against a built-in in-process mock — no platform, no token — so you can try the flow today. See [`docs/usage.md`](docs/usage.md) for every env var and option.
 
 ---
 
-## Tools
+## The Basic Workflow
 
-Exposed to the agent as `mcp__spreadx__<tool>` (the editor namespaces them automatically):
+Once installed, the loop for any task is the same four phases:
+
+1. **Authorize (once)** — the client runs the OAuth flow in your browser. The grant is held by the authorization server; you won't log in again.
+2. **Ask in natural language** — the `spreadx-agent` Skill maps your request to the right `mcp__spreadx__*` tool. Reads return immediately.
+3. **Preview before writing** — for a follow/engagement plan, the agent calls the tool with `confirm:false` first and shows you the dry-run: pool size, would-select, **shortfall band** (`≤5%` proceed · `5–10%` ask · `>10%` don't), and ETA.
+4. **Approve, then execute** — on your go-ahead it re-calls with `confirm:true`. In the harness this passes through the gate (your `y/N`, or headless auto-approve within caps); in editors it's the client's own approval UI. The server rejects any write whose shortfall exceeds 10%.
+
+Then **check status** (`get_plan_status`) any time. The same workflow covers `create_follow_plan` (涨粉) and `create_engagement_plan` (赞/转/评).
+
+```
+You:    帮 @laura 加 200 个 crypto 英文粉
+Agent:  [dry-run] pool 1,000 · would select 200 · shortfall 0 (ok) · ETA ~12m. 执行?
+You:    ok
+Agent:  [confirm] plan mock-plan-1 created ✅
+```
+
+---
+
+## What's Inside
+
+**Tools** (exposed to the agent as `mcp__spreadx__<tool>`):
 
 | Tool | Kind | Scope (server-enforced) | What |
 |---|---|---|---|
@@ -88,67 +108,44 @@ Exposed to the agent as `mcp__spreadx__<tool>` (the editor namespaces them autom
 | `create_follow_plan` | **write** | `plans:write` | add followers to a user |
 | `create_engagement_plan` | **write** | `plans:write` | like / retweet / comment on a tweet |
 
-## The two-step write protocol
+**Components in this repo:**
 
-Every write tool takes `confirm` (default `false`):
+- `.claude-plugin/` — the Claude Code plugin (marketplace + manifest) bundling the Skill and MCP server
+- `.claude/skills/spreadx-agent/SKILL.md` — the Skill (UX phrasing over the tools)
+- `.mcp.json` — project-mode MCP mount (for cloning this repo directly)
+- `docs/codex-setup.md` — Codex setup
+- `src/core/writeGate.ts` — the deterministic `canUseTool` safety gate
+- `src/harness/{client,cli}.ts` — the Agent SDK harness + `matrix` CLI
+- `src/mock/` — in-process dev mock (balance + follow), so the harness runs offline
 
-1. **Preview** — `confirm:false` → the server returns a dry-run: per-op `pool_size`, `would_select`, `shortfall`, ETA. No state changes.
-2. **Show the numbers, present the shortfall band, get approval**, then call again with `confirm:true`.
-
-**Shortfall bands:** `≤5%` proceed · `5–10%` ask · `>10%` don't (the server also rejects `confirm:true` above 10%). The client never re-implements the 10% rule — that's the server's job.
-
-### The deterministic write gate (harness)
-
-The harness's `canUseTool` is the headless safety boundary. It:
-
-- **allows** read tools and write *previews* (no side effects) automatically;
-- on a real write (`confirm:true`): enforces an **amount cap** first (`MATRIX_MAX_FOLLOW` / `MATRIX_MAX_ENGAGEMENT`), then requires approval — **interactive** prompts you (`y/N` on stdin); **headless** denies unless `MATRIX_AUTO_APPROVE=1`;
-- **fails closed**: a missing/non-numeric/`<1` count, or any tool outside the spreadx allowlist, is denied.
-
-This is enforced by code and locked by tests, independent of the model. Write tools are deliberately kept **out** of the SDK's `allowedTools` so they route through this gate rather than being auto-approved.
+**The safety gate** (harness): read tools and write *previews* are auto-allowed; a real write (`confirm:true`) must pass an amount cap (`MATRIX_MAX_FOLLOW` / `MATRIX_MAX_ENGAGEMENT`) and then approval (interactive `y/N`, or `MATRIX_AUTO_APPROVE=1` headless). It **fails closed** on a missing/invalid count or any non-spreadx tool, and write tools are deliberately kept out of the SDK's `allowedTools` so they can't be auto-approved around the gate. Enforced by code, locked by tests — independent of the model.
 
 ---
 
-## Project layout
+## Updating
 
 ```
-.mcp.json                              # Claude Code → remote spreadx (auto-OAuth)
-.claude/skills/spreadx-agent/SKILL.md  # the Skill (UX phrasing over the MCP tools)
-docs/
-  design/spreadx-matrix.md             # design spec
-  codex-setup.md                       # Codex MCP client setup
-  usage.md                             # full install + usage guide
-  superpowers/plans/…                  # implementation plan (history)
-src/
-  core/writeGate.ts                    # the canUseTool safety gate
-  core/config.ts                       # env → MatrixConfig
-  mock/{tools,server}.ts               # in-process dev mock (balance + follow)
-  harness/{client,cli}.ts              # Agent SDK harness + `matrix` CLI
+/plugin marketplace update spreadx-matrix    # fetch the latest version
 ```
 
-## Development
+Uninstall with `/plugin uninstall spreadx-matrix`. For the harness, `git pull && pnpm install`.
 
-```bash
-pnpm install
-pnpm test       # vitest — 23 tests across 6 files (write gate, config, mock,
-                #          gate enforcement, allowedTools, remote-path guard)
-pnpm build      # tsc → dist/  (then `matrix` is on the bin path)
-```
-
-Tech: Node ≥20, TypeScript (ESM), `@anthropic-ai/claude-agent-sdk`, `zod`. No `@modelcontextprotocol/sdk` — the SDK's own in-process server backs the mock.
-
-## Status & roadmap
-
-- ✅ Skill, editor config, harness, deterministic write gate, in-process mock — implemented and tested.
-- ⏳ **Real server** — the editor `.mcp.json` and harness reach `mcp.spreadx.ai` only after `spreadx-platform` ships **Phase B.4** (FastMCP streamable-http transport) and deploys. Cutover from here is one env var: `SPREADX_MCP_URL`.
-- ⏳ **Live model smoke** — the LLM-driven tool loop needs an `ANTHROPIC_API_KEY`; run it against the mock (see usage). The deterministic gate, config, and mock logic are already proven by tests + no-key runtime smokes.
+---
 
 ## Security
 
-No secrets at rest: the editor path uses client-managed OAuth (no token in `.mcp.json`); the harness reads `SPREADX_ACCESS_TOKEN` from env only. `.env` and `.mcp.local.json` are git-ignored. Never commit a token. Revocation lives in the OAuth layer (the platform AS / dashboard); the access token's short TTL bounds any leak.
+No secrets at rest. The plugin/editor path uses client-managed OAuth (no token in any config); the harness reads `SPREADX_ACCESS_TOKEN` from env only. `.env` and `.mcp.local.json` are git-ignored — never commit a token. Revocation lives in the OAuth layer (the platform AS / dashboard); the access token's short TTL bounds any leak.
+
+---
+
+## Status & roadmap
+
+- ✅ Plugin, Skill, editor config, harness, deterministic write gate, in-process mock — implemented and tested (23 tests).
+- ⏳ **Real server** — the MCP URL `mcp.spreadx.ai` is reachable once `spreadx-platform` ships **Phase B.4** (FastMCP streamable-http) and deploys. Until then use `SPREADX_MCP_URL=mock`; cutover is one env var.
+- ⏳ **Live model smoke** — the LLM-driven tool loop needs an `ANTHROPIC_API_KEY` (run it against the mock). The gate, config, and mock logic are already proven by tests + no-key runtime smokes.
 
 ## See also
 
 - **[`docs/usage.md`](docs/usage.md)** — installation & usage, in depth
 - **[`docs/design/spreadx-matrix.md`](docs/design/spreadx-matrix.md)** — design spec
-- **`spreadx-platform`** — the MCP server (`spreadx-mcp-user`) and OAuth AS
+- **`spreadx-platform`** — the MCP server (`spreadx-mcp-user`) and OAuth authorization server
