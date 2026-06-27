@@ -43,6 +43,15 @@ Update / remove later with:
 /plugin uninstall spreadx-matrix
 ```
 
+> **Where the marketplace lives.** `add SpreadXAI/spreadx-marketplace` fetches the
+> `SpreadXAI/spreadx-marketplace` repo, whose `marketplace.json` lists the `spreadx-matrix`
+> plugin (sourced from `SpreadXAI/matrix`). If you haven't published that marketplace repo
+> yet, you can install straight from the plugin repo instead — the install name is the same:
+> ```
+> /plugin marketplace add SpreadXAI/matrix
+> /plugin install spreadx-matrix@spreadx-marketplace
+> ```
+
 ### Claude Code — without the plugin
 
 If you'd rather not use the plugin (e.g. you cloned this repo to work on it), the repo already contains [`.mcp.json`](../.mcp.json):
