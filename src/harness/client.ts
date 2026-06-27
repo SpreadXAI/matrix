@@ -4,6 +4,8 @@ import { loadConfig, type MatrixConfig } from "../core/config.js";
 import { makeWriteGate } from "../core/writeGate.js";
 import { ALLOWED_READ } from "../core/tools.js";
 import { createMockServer } from "../mock/server.js";
+import { resolveAccessToken } from "../auth/resolve.js";
+import { FileTokenStore, type TokenStore } from "../auth/tokenStore.js";
 
 const SYSTEM_APPEND = `You operate a SpreadX account via the mcp__spreadx__* tools.
 ALWAYS preview a write tool with confirm:false first, present the shortfall band, and only
@@ -17,7 +19,7 @@ export const ALLOWED = ALLOWED_READ;
 
 export async function runAgent(
   prompt: string,
-  opts: { config?: MatrixConfig; approve?: (s: string) => Promise<boolean> } = {},
+  opts: { config?: MatrixConfig; approve?: (s: string) => Promise<boolean>; store?: TokenStore } = {},
 ): Promise<string> {
   const config = opts.config ?? loadConfig();
   const gate = makeWriteGate({ mode: config.mode, caps: config.caps, autoApproveWrites: config.autoApproveWrites, approve: opts.approve });
@@ -25,14 +27,13 @@ export async function runAgent(
   // Adaptation from brief: CanUseTool requires a 3rd `options` argument; gate ignores it.
   const canUseTool: CanUseTool = (toolName, input, _options) => gate(toolName, input);
 
-  if (config.mcpUrl !== "mock" && !config.bearerToken) {
-    throw new Error("SPREADX_ACCESS_TOKEN is required when SPREADX_MCP_URL is not 'mock'");
-  }
+  // env token → stored credentials (refreshed) → "run matrix login"; mock needs none.
+  const accessToken = await resolveAccessToken(config, { store: opts.store ?? new FileTokenStore() });
 
   const mcpServers =
     config.mcpUrl === "mock"
       ? { spreadx: createMockServer() }
-      : { spreadx: { type: "http" as const, url: config.mcpUrl, ...(config.bearerToken ? { headers: { Authorization: `Bearer ${config.bearerToken}` } } : {}) } };
+      : { spreadx: { type: "http" as const, url: config.mcpUrl, ...(accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {}) } };
 
   let finalText: string | null = null;
   let failureSubtype: string | null = null;

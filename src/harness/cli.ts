@@ -11,9 +11,30 @@ async function confirmStdin(summary: string): Promise<boolean> {
 }
 
 async function main() {
-  const prompt = process.argv.slice(2).join(" ").trim();
-  if (!prompt) throw new Error('usage: matrix "<natural language instruction>"');
+  const argv = process.argv.slice(2);
   const config = loadConfig();
+
+  if (argv[0] === "login") {
+    if (config.mcpUrl === "mock") {
+      throw new Error("login is not needed for the mock; set SPREADX_MCP_URL to the real server first");
+    }
+    const { login } = await import("../auth/login.js");
+    await login(config.mcpUrl);
+    // eslint-disable-next-line no-console
+    console.log(`Logged in to ${config.mcpUrl}. Credentials saved; future runs refresh the token automatically.`);
+    return;
+  }
+
+  if (argv[0] === "logout") {
+    const { FileTokenStore } = await import("../auth/tokenStore.js");
+    await new FileTokenStore().clear(config.mcpUrl);
+    // eslint-disable-next-line no-console
+    console.log(`Logged out of ${config.mcpUrl}.`);
+    return;
+  }
+
+  const prompt = argv.join(" ").trim();
+  if (!prompt) throw new Error('usage: matrix "<instruction>"  |  matrix login  |  matrix logout');
   const result = await runAgent(prompt, { config, approve: config.mode === "interactive" ? confirmStdin : undefined });
   // eslint-disable-next-line no-console
   console.log(result);

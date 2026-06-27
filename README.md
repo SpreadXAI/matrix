@@ -42,7 +42,7 @@ The capability is two things: a **Skill** (phrasing/UX) and the **`spreadx` MCP 
 |---|---|---|---|---|
 | **Claude Code** | `/plugin marketplace add SpreadXAI/spreadx-marketplace` → `/plugin install spreadx-matrix@spreadx-marketplace` | browser OAuth (once) | ✅ auto-loads | editor approval UI + server guard |
 | **Codex** | `codex plugin marketplace add SpreadXAI/matrix` → `/plugins` → Install | `codex mcp login spreadx` | ✅ native | Codex confirm UI + server guard |
-| **Standalone harness** | `git clone` + `pnpm install` | `SPREADX_ACCESS_TOKEN` env (or `mock`) | ✅ via SDK | deterministic `canUseTool` gate (approval + caps) + server guard |
+| **Standalone harness** | `git clone` + `pnpm install` | `matrix login` (browser, once) — or `SPREADX_ACCESS_TOKEN` env / `mock` | ✅ via SDK | deterministic `canUseTool` gate (approval + caps) + server guard |
 
 ### Claude Code (plugin — installs both)
 
@@ -84,7 +84,7 @@ cp .env.example .env          # set ANTHROPIC_API_KEY; SPREADX_MCP_URL=mock for 
 node --env-file=.env --import tsx src/harness/cli.ts "Check my balance"
 ```
 
-`SPREADX_MCP_URL=mock` runs against a built-in in-process mock — no platform, no token — so you can try the flow today. See [`docs/usage.md`](docs/usage.md) for every env var and option.
+`SPREADX_MCP_URL=mock` runs against a built-in in-process mock — no platform, no token — so you can try the flow today. For the real server, authorize once with **`matrix login`** (browser Auth Code + PKCE → a rotating refresh token stored at `~/.config/spreadx-matrix/credentials.json`, 0600); the harness then refreshes the access token before each run, so it can run unattended. See [`docs/usage.md`](docs/usage.md) for every env var and option.
 
 ---
 
@@ -128,6 +128,7 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 - `skills/spreadx-agent/SKILL.md` — the Skill (UX phrasing over the tools), shared by both plugins (symlinked into `.claude/skills/` so the harness loads it too)
 - `.mcp.json` — project-mode MCP mount (for cloning this repo directly)
 - `docs/codex-setup.md` — Codex setup
+- `src/auth/` — the OAuth client: `matrix login` (discovery + PKCE + DCR), refresh-token store (0600), and `resolveAccessToken` (refresh-on-run)
 - `src/core/tools.ts` — the tool registry (single source of truth for the 6 tools; gate + harness derive from it)
 - `src/core/writeGate.ts` — the deterministic `canUseTool` safety gate (fail-safe: unknown spreadx tools require approval, non-spreadx tools are denied)
 - `src/harness/{client,cli}.ts` — the Agent SDK harness + `matrix` CLI
