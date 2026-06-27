@@ -8,9 +8,15 @@ const SYSTEM_APPEND = `You operate a SpreadX account via the mcp__spreadx__* too
 ALWAYS preview a write tool with confirm:false first, present the shortfall band, and only
 call confirm:true after approval. Never bypass the two-step protocol.`;
 
-const ALLOWED = [
-  "mcp__spreadx__get_balance", "mcp__spreadx__list_orders", "mcp__spreadx__get_order",
-  "mcp__spreadx__get_plan_status", "mcp__spreadx__create_follow_plan", "mcp__spreadx__create_engagement_plan",
+// Only READ tools are auto-allowed. The two write tools are deliberately
+// EXCLUDED: the SDK runs allowedTools without consulting canUseTool, so listing
+// a write tool here would bypass the gate. Omitted → they route through
+// canUseTool (the write gate), which is the only headless write authorizer.
+export const ALLOWED = [
+  "mcp__spreadx__get_balance",
+  "mcp__spreadx__list_orders",
+  "mcp__spreadx__get_order",
+  "mcp__spreadx__get_plan_status",
 ];
 
 export async function runAgent(
