@@ -11,8 +11,8 @@
 **Claude Code** — install the plugin, then ask:
 
 ```
-/plugin marketplace add SpreadXAI/matrix
-/plugin install spreadx-matrix@spreadx-matrix
+/plugin marketplace add SpreadXAI/spreadx-marketplace
+/plugin install spreadx-matrix@spreadx-marketplace
 ```
 
 That registers the `spreadx` MCP server **and** the `spreadx-agent` Skill. On first use a browser window opens for a one-time OAuth authorization. Then:
@@ -41,8 +41,8 @@ The capability is two things: a **Skill** (phrasing/UX) and the **`spreadx` MCP 
 ### Claude Code (plugin — installs both)
 
 ```
-/plugin marketplace add SpreadXAI/matrix
-/plugin install spreadx-matrix@spreadx-matrix
+/plugin marketplace add SpreadXAI/spreadx-marketplace
+/plugin install spreadx-matrix@spreadx-marketplace
 ```
 
 The plugin ([`.claude-plugin/`](.claude-plugin/)) bundles the `spreadx-agent` Skill and registers the remote MCP server. First tool use triggers the one-time browser OAuth (login via Privy, approve scopes). No tokens to paste, nothing at rest.
@@ -125,7 +125,7 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 ## Updating
 
 ```
-/plugin marketplace update spreadx-matrix    # fetch the latest version
+/plugin marketplace update spreadx-marketplace    # fetch the latest version
 ```
 
 Uninstall with `/plugin uninstall spreadx-matrix`. For the harness, `git pull && pnpm install`.
