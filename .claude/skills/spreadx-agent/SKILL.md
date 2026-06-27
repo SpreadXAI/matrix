@@ -1,22 +1,22 @@
 ---
 name: spreadx-agent
-description: This skill should be used to operate a user's SpreadX account through the spreadx MCP tools — checking balance and orders, or creating follow and like/retweet/comment growth plans. It triggers on requests such as "check my balance" / "我的余额还有多少", "show my orders" / "看看我的订单", "add 200 followers to @x" / "帮 @X 加 N 粉", "like this tweet 50 times" / "给这条推点 N 个赞/评论/转发", or checking a plan's progress. Requires the spreadx MCP server connected (one-time OAuth).
+description: Operates a user's SpreadX account via the spreadx MCP tools — balance, orders, add followers, like/retweet/comment. Use when the user asks about their balance/余额积分, orders/订单, 加粉/followers for @x, 点赞/liking a tweet, or a plan's progress.
 ---
 
 # SpreadX Agent skill
 
-Translate natural-language asks into `mcp__spreadx__*` tool calls. Always preview a write before committing it, and respond in the user's own language.
+Translate natural-language asks into `mcp__spreadx__*` tool calls. Always preview a write before committing it, and respond in the user's own language. Each tool's exact parameters live in its own MCP description/schema — rely on those rather than guessing; this skill covers *when* and *in what order* to call the tools, and how to handle the results.
 
-## Tools
+## Tools (all named `mcp__spreadx__<name>`)
 
-| Intent | Tool | Key args |
-|---|---|---|
-| Balance / points / package | `get_balance` | — (read-only) |
-| List orders | `list_orders` | `limit`, `cursor` |
-| One order | `get_order` | `order_id` |
-| Plan progress | `get_plan_status` | `plan_id` |
-| Add followers | `create_follow_plan` | `username`, `count`, `tags?`, `speed?`, `confirm` |
-| Engagement (like / retweet / comment) | `create_engagement_plan` | `tweet_url` or `tweet_id`, `operations[{type,count,content_config?}]`, `confirm` |
+| Intent | Tool |
+|---|---|
+| Balance / points / package | `get_balance` (read-only) |
+| List orders | `list_orders` (read-only) |
+| One order | `get_order` (read-only) |
+| Plan progress | `get_plan_status` (read-only) |
+| Add followers | `create_follow_plan` (write) |
+| Like / retweet / comment | `create_engagement_plan` (write) |
 
 ## Two-step write protocol — ALWAYS
 
