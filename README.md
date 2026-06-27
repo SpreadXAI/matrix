@@ -1,6 +1,6 @@
 # SpreadX Matrix
 
-**Operate a SpreadX account from your AI agent.** Install one plugin, authorize once in the browser, then just ask — *"查一下我的余额"*, *"帮 @laura 加 200 个 crypto 英文粉"*, *"给这条推点 50 个赞"* — and Claude (or Codex) does it through the **spreadx MCP server**, with a dry-run preview and your approval before any real write.
+**Operate a SpreadX account from your AI agent.** Install one plugin, authorize once in the browser, then just ask — *"Check my balance"*, *"Add 200 crypto English-speaking followers for @laura"*, *"Like this tweet 50 times"* — and Claude (or Codex) does it through the **spreadx MCP server**, with a dry-run preview and your approval before any real write.
 
 > This repo is the **client** side. The MCP **server** (`spreadx-mcp-user`, an OAuth Resource Server at `https://mcp.spreadx.ai/`) lives in **`spreadx-platform`**. This repo ships the Skill, the MCP wiring, and a standalone harness — it copies no server logic and makes no authorization decisions of its own.
 
@@ -18,8 +18,8 @@
 That registers the `spreadx` MCP server **and** the `spreadx-agent` Skill. On first use a browser window opens for a one-time OAuth authorization. Then:
 
 ```
-查一下我的余额
-帮 @laura 加 200 个 crypto 英文粉
+Check my balance
+Add 200 crypto English-speaking followers for @laura
 ```
 
 That's it. Read on for Codex, the standalone harness, and how the safety gate works.
@@ -68,7 +68,7 @@ A `matrix` CLI that drives the agent programmatically, with the deterministic wr
 git clone https://github.com/SpreadXAI/matrix && cd matrix
 pnpm install
 cp .env.example .env          # set ANTHROPIC_API_KEY; SPREADX_MCP_URL=mock for offline dev
-node --env-file=.env --import tsx src/harness/cli.ts "查一下我的余额"
+node --env-file=.env --import tsx src/harness/cli.ts "Check my balance"
 ```
 
 `SPREADX_MCP_URL=mock` runs against a built-in in-process mock — no platform, no token — so you can try the flow today. See [`docs/usage.md`](docs/usage.md) for every env var and option.
@@ -84,11 +84,11 @@ Once installed, the loop for any task is the same four phases:
 3. **Preview before writing** — for a follow/engagement plan, the agent calls the tool with `confirm:false` first and shows you the dry-run: pool size, would-select, **shortfall band** (`≤5%` proceed · `5–10%` ask · `>10%` don't), and ETA.
 4. **Approve, then execute** — on your go-ahead it re-calls with `confirm:true`. In the harness this passes through the gate (your `y/N`, or headless auto-approve within caps); in editors it's the client's own approval UI. The server rejects any write whose shortfall exceeds 10%.
 
-Then **check status** (`get_plan_status`) any time. The same workflow covers `create_follow_plan` (涨粉) and `create_engagement_plan` (赞/转/评).
+Then **check status** (`get_plan_status`) any time. The same workflow covers `create_follow_plan` (add followers) and `create_engagement_plan` (like / retweet / comment).
 
 ```
-You:    帮 @laura 加 200 个 crypto 英文粉
-Agent:  [dry-run] pool 1,000 · would select 200 · shortfall 0 (ok) · ETA ~12m. 执行?
+You:    Add 200 crypto English-speaking followers for @laura
+Agent:  [dry-run] pool 1,000 · would select 200 · shortfall 0 (ok) · ETA ~12m. Proceed?
 You:    ok
 Agent:  [confirm] plan mock-plan-1 created ✅
 ```
