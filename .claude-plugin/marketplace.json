@@ -1,5 +1,5 @@
 {
-  "name": "spreadx-matrix",
+  "name": "spreadx-marketplace",
   "description": "SpreadX agent client — a Skill plus the spreadx MCP server for operating a SpreadX account (balance, orders, follow, like) from your AI agent.",
   "owner": {
     "name": "SpreadX",

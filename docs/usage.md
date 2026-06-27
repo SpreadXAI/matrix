@@ -31,15 +31,15 @@ Both talk to the same MCP server and obey the same write protocol.
 Install the plugin; it registers the `spreadx` MCP server **and** the `spreadx-agent` Skill in one step:
 
 ```
-/plugin marketplace add SpreadXAI/matrix
-/plugin install spreadx-matrix@spreadx-matrix
+/plugin marketplace add SpreadXAI/spreadx-marketplace
+/plugin install spreadx-matrix@spreadx-marketplace
 ```
 
 Then on the first tool call Claude Code performs the OAuth flow — a browser window opens, you log in (via Privy) and approve the requested scopes **once**. The refresh token is held by the authorization server; you won't log in again.
 
 Update / remove later with:
 ```
-/plugin marketplace update spreadx-matrix
+/plugin marketplace update spreadx-marketplace
 /plugin uninstall spreadx-matrix
 ```
 
