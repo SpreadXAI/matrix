@@ -47,4 +47,9 @@ describe("makeWriteGate", () => {
     const d = await makeWriteGate({ mode: "interactive", caps, approve: async () => true })("mcp__spreadx__create_follow_plan", { username: "laura", count: "abc" as unknown as number, confirm: true });
     expect(d).toMatchObject({ behavior: "deny" });
   });
+  it("denies confirm=true when count is zero or negative (fail closed)", async () => {
+    const gate = makeWriteGate({ mode: "interactive", caps, approve: async () => true });
+    expect((await gate("mcp__spreadx__create_follow_plan", { username: "x", count: 0, confirm: true })).behavior).toBe("deny");
+    expect((await gate("mcp__spreadx__create_follow_plan", { username: "x", count: -5, confirm: true })).behavior).toBe("deny");
+  });
 });

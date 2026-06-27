@@ -42,7 +42,7 @@ export function makeWriteGate(policy: WriteGatePolicy) {
     const isFollow = toolName === "mcp__spreadx__create_follow_plan";
     const cap = isFollow ? policy.caps.follow : policy.caps.engagement;
     const count = isFollow ? Number(input.count ?? 0) : engagementTotal(input);
-    if (!Number.isFinite(count) || count > cap) {
+    if (!Number.isFinite(count) || count < 1 || count > cap) {
       return { behavior: "deny", message: `requested count ${count} is invalid or exceeds cap ${cap}` };
     }
     if (policy.mode === "headless") {
