@@ -33,9 +33,27 @@ async function main() {
     return;
   }
 
+  if (argv[0] === "status") {
+    if (config.mcpUrl === "mock") {
+      // eslint-disable-next-line no-console
+      console.log("mock mode — no authentication needed.");
+      return;
+    }
+    const { defaultTokenStore } = await import("../auth/store.js");
+    const { formatAuthStatus } = await import("../auth/status.js");
+    const creds = await defaultTokenStore().load(config.mcpUrl);
+    // eslint-disable-next-line no-console
+    console.log(formatAuthStatus(config.mcpUrl, creds, Math.floor(Date.now() / 1000)));
+    return;
+  }
+
   const prompt = argv.join(" ").trim();
-  if (!prompt) throw new Error('usage: matrix "<instruction>"  |  matrix login  |  matrix logout');
-  const result = await runAgent(prompt, { config, approve: config.mode === "interactive" ? confirmStdin : undefined });
+  if (!prompt) throw new Error('usage: matrix "<instruction>"  |  matrix login | logout | status');
+  const result = await runAgent(prompt, {
+    config,
+    approve: config.mode === "interactive" ? confirmStdin : undefined,
+    onProgress: (line) => process.stderr.write(`${line}\n`),
+  });
   // eslint-disable-next-line no-console
   console.log(result);
 }

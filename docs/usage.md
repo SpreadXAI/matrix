@@ -130,6 +130,7 @@ Against the real server you authorize **once**, then the harness runs unattended
 
 ```bash
 matrix login      # opens the browser (Auth Code + PKCE); approve, done
+matrix status     # show whether you're logged in and how long the access token is valid
 matrix logout     # forget the stored credentials for the current SPREADX_MCP_URL
 ```
 
@@ -177,6 +178,8 @@ MATRIX_HEADLESS=1 MATRIX_AUTO_APPROVE=1 MATRIX_MAX_FOLLOW=300 \
   matrix "Add 200 followers for @laura"
 ```
 Headless suppresses prompts. A real write then needs `MATRIX_AUTO_APPROVE=1` **and** must be within the cap, or the gate denies it. Reads and previews always run.
+
+During a long tool call the CLI prints progress heartbeats (e.g. `… create_follow_plan still running (8s)`) to **stderr**, so they never mix into the captured result on stdout.
 
 ---
 

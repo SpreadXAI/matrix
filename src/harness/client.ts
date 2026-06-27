@@ -20,7 +20,7 @@ export const ALLOWED = ALLOWED_READ;
 
 export async function runAgent(
   prompt: string,
-  opts: { config?: MatrixConfig; approve?: (s: string) => Promise<boolean>; store?: TokenStore } = {},
+  opts: { config?: MatrixConfig; approve?: (s: string) => Promise<boolean>; store?: TokenStore; onProgress?: (line: string) => void } = {},
 ): Promise<string> {
   const config = opts.config ?? loadConfig();
   const gate = makeWriteGate({ mode: config.mode, caps: config.caps, autoApproveWrites: config.autoApproveWrites, approve: opts.approve });
@@ -51,7 +51,10 @@ export async function runAgent(
       maxTurns: 12,
     },
   })) {
-    if (message.type === "result") {
+    if (message.type === "tool_progress") {
+      // Heartbeat for a long-running tool call (the SDK handles the MCP progressToken).
+      opts.onProgress?.(`… ${message.tool_name} still running (${message.elapsed_time_seconds}s)`);
+    } else if (message.type === "result") {
       // Adaptation from brief: SDKResultSuccess.result is string (not optional); cast precisely.
       if (message.subtype === "success") finalText = (message as SDKResultSuccess).result;
       else failureSubtype = message.subtype;
