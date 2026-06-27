@@ -107,6 +107,7 @@ Edit `.env`:
 | `MATRIX_AUTO_APPROVE` | `0` | `1` lets headless mode commit writes (still capped). |
 | `MATRIX_MAX_FOLLOW` | `1000` | Hard cap the gate enforces on a real follow write. |
 | `MATRIX_MAX_ENGAGEMENT` | `500` | Hard cap on a real engagement write (summed over ops). |
+| `MATRIX_TOKEN_STORE` | auto | Where `matrix login` keeps the refresh token: `keychain` (default on macOS) or `file` (0600, default elsewhere). |
 
 Run (no build needed — `tsx` runs the TypeScript directly):
 
@@ -132,9 +133,9 @@ matrix login      # opens the browser (Auth Code + PKCE); approve, done
 matrix logout     # forget the stored credentials for the current SPREADX_MCP_URL
 ```
 
-`matrix login` discovers the authorization server from the MCP resource (RFC 9728 → RFC 8414), registers a loopback client (DCR), runs S256 PKCE with `offline_access`, and stores the **rotating refresh token** at `~/.config/spreadx-matrix/credentials.json` (mode `0600`), keyed by MCP URL. Before each run the harness reuses a valid access token or refreshes it; if nothing is stored it tells you to `matrix login`. Token resolution priority: `mock` → `SPREADX_ACCESS_TOKEN` (one-off override) → stored credentials. (`login` is not needed — and refused — for `SPREADX_MCP_URL=mock`.)
+`matrix login` discovers the authorization server from the MCP resource (RFC 9728 → RFC 8414), registers a loopback client (DCR), runs S256 PKCE with `offline_access`, and stores the **rotating refresh token** keyed by MCP URL. Before each run the harness reuses a valid access token or refreshes it; if nothing is stored it tells you to `matrix login`. Token resolution priority: `mock` → `SPREADX_ACCESS_TOKEN` (one-off override) → stored credentials. (`login` is not needed — and refused — for `SPREADX_MCP_URL=mock`.)
 
-> The 0600 file is the v1 store. A macOS Keychain backend can replace it behind the same `TokenStore` interface without changing callers.
+> Tokens are stored in the **macOS Keychain** by default (encrypted at rest); on other platforms, or with `MATRIX_TOKEN_STORE=file`, a `0600` file at `~/.config/spreadx-matrix/credentials.json` is used instead.
 
 ---
 

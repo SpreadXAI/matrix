@@ -1,0 +1,20 @@
+{
+  "name": "spreadx-marketplace",
+  "description": "SpreadX agent client marketplace — the spreadx-matrix plugin (Skill + spreadx MCP server).",
+  "owner": {
+    "name": "SpreadX",
+    "email": "milhous.zhang@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "spreadx-matrix",
+      "description": "Operate a SpreadX account from your agent — balance, orders, follow, like — via the spreadx MCP server, with a dry-run→confirm safety protocol.",
+      "version": "0.1.0",
+      "source": {
+        "source": "github",
+        "repo": "SpreadXAI/matrix"
+      },
+      "homepage": "https://github.com/SpreadXAI/matrix"
+    }
+  ]
+}

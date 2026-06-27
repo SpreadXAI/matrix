@@ -128,7 +128,7 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 - `skills/spreadx-agent/SKILL.md` — the Skill (UX phrasing over the tools), shared by both plugins (symlinked into `.claude/skills/` so the harness loads it too)
 - `.mcp.json` — project-mode MCP mount (for cloning this repo directly)
 - `docs/codex-setup.md` — Codex setup
-- `src/auth/` — the OAuth client: `matrix login` (discovery + PKCE + DCR), refresh-token store (0600), and `resolveAccessToken` (refresh-on-run)
+- `src/auth/` — the OAuth client: `matrix login` (discovery + PKCE + DCR), refresh-token store (macOS Keychain / 0600 file), and `resolveAccessToken` (refresh-on-run)
 - `src/core/tools.ts` — the tool registry (single source of truth for the 6 tools; gate + harness derive from it)
 - `src/core/writeGate.ts` — the deterministic `canUseTool` safety gate (fail-safe: unknown spreadx tools require approval, non-spreadx tools are denied)
 - `src/harness/{client,cli}.ts` — the Agent SDK harness + `matrix` CLI
