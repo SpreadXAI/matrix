@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "spreadx": {
+      "type": "http",
+      "url": "https://mcp.spreadx.ai/"
+    }
+  }
+}
