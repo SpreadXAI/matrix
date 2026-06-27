@@ -38,6 +38,12 @@ The protocol lives in the tools, so **Codex obeys it with no Skill at all**. The
 
 The capability is two things: a **Skill** (phrasing/UX) and the **`spreadx` MCP server** (the actual tools). How you install them depends on your client.
 
+| Client | Install | Authorize | You get |
+|---|---|---|---|
+| **Claude Code** | `/plugin marketplace add SpreadXAI/spreadx-marketplace` → `/plugin install spreadx-matrix@spreadx-marketplace` | browser OAuth (once) | Skill + MCP server |
+| **Codex** | `codex plugin marketplace add SpreadXAI/matrix` → `/plugins` → Install | `codex mcp login spreadx` | Skill + MCP server |
+| **Standalone harness** | `git clone` + `pnpm install` | `SPREADX_ACCESS_TOKEN` env (or `mock`) | `matrix` CLI + deterministic write gate |
+
 ### Claude Code (plugin — installs both)
 
 ```
