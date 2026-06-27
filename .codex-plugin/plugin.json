@@ -16,7 +16,7 @@
     "agent",
     "oauth"
   ],
-  "skills": "./.claude/skills",
+  "skills": "./skills",
   "mcpServers": "./.codex-plugin/mcp.json",
   "interface": {
     "displayName": "SpreadX Matrix",

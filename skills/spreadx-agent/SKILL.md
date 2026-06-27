@@ -1,6 +1,6 @@
 ---
 name: spreadx-agent
-description: Operates a user's SpreadX account via the spreadx MCP tools — balance, orders, add followers, like/retweet/comment. Use when the user asks about their balance/余额积分, orders/订单, 加粉/followers for @x, 点赞/liking a tweet, or a plan's progress.
+description: Operates a user's SpreadX account via the spreadx MCP tools — balance, orders, add followers, like/retweet/comment. Use when the user asks to check balance or points, view orders, add followers to @x, like a tweet, or check a plan's progress.
 ---
 
 # SpreadX Agent skill

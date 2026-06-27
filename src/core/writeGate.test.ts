@@ -52,4 +52,16 @@ describe("makeWriteGate", () => {
     expect((await gate("mcp__spreadx__create_follow_plan", { username: "x", count: 0, confirm: true })).behavior).toBe("deny");
     expect((await gate("mcp__spreadx__create_follow_plan", { username: "x", count: -5, confirm: true })).behavior).toBe("deny");
   });
+  it("treats an UNKNOWN spreadx tool as a write — never a free preview (fail safe)", async () => {
+    // An unknown spreadx.* tool (e.g. added server-side later) must require approval
+    // even with confirm:false — no side-effect-free assumption.
+    const declined = makeWriteGate({ mode: "interactive", caps, approve: async () => false });
+    expect((await declined("mcp__spreadx__delete_account", { confirm: false })).behavior).toBe("deny");
+
+    const granted = makeWriteGate({ mode: "interactive", caps, approve: async () => true });
+    expect((await granted("mcp__spreadx__delete_account", { confirm: true })).behavior).toBe("allow");
+
+    // headless without auto-approve denies it
+    expect((await makeWriteGate({ mode: "headless", caps })("mcp__spreadx__delete_account", {})).behavior).toBe("deny");
+  });
 });

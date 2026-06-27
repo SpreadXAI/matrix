@@ -64,7 +64,7 @@ Open the repo in Claude Code (it auto-mounts), or register the server anywhere w
 ```bash
 claude mcp add --transport http spreadx https://mcp.spreadx.ai/
 ```
-The **`spreadx-agent`** Skill auto-loads from `.claude/skills/` when your request looks like balance / orders / follow / like.
+The **`spreadx-agent`** Skill auto-loads when your request looks like balance / orders / follow / like (it lives in `skills/`, surfaced at `.claude/skills/` via a symlink for project use).
 
 **Local dev against the mock:** the editor path needs a live HTTP server; the mock is in-process to the harness. For an offline loop today, use the harness below with `SPREADX_MCP_URL=mock`.
 
@@ -111,14 +111,14 @@ Edit `.env`:
 Run (no build needed — `tsx` runs the TypeScript directly):
 
 ```bash
-node --env-file=.env --import tsx src/harness/cli.ts "查一下我的余额"
+node --env-file=.env --import tsx src/harness/cli.ts "Check my balance"
 # or, with env already exported:
-pnpm harness "查一下我的余额"
+pnpm harness "Check my balance"
 ```
 
 Install the `matrix` command globally (optional):
 ```bash
-pnpm build && pnpm link --global   # then: matrix "查余额"
+pnpm build && pnpm link --global   # then: matrix "Check my balance"
 ```
 
 ---
@@ -130,15 +130,15 @@ The CLI takes one free-text instruction; the agent picks the right tool.
 ### Read balance / orders
 
 ```bash
-matrix "查一下我的余额和套餐"
-matrix "列出我最近的充值订单"
-matrix "plan 7f3a… 现在涨了多少粉了?"
+matrix "Check my balance and package"
+matrix "List my recent recharge orders"
+matrix "How many followers has plan 7f3a… gained?"
 ```
 
 ### Add followers (a write — previewed first)
 
 ```bash
-matrix "帮 @laura 加 200 个 crypto 英文粉"
+matrix "Add 200 crypto English-speaking followers for @laura"
 ```
 The agent calls `create_follow_plan(confirm:false)` → shows the pool size, would-select, shortfall band → asks you to confirm → on approval calls `confirm:true`. In **interactive** mode you get a `y/N` prompt before the real write:
 
@@ -151,14 +151,14 @@ mcp__spreadx__create_follow_plan {"username":"laura","count":200,"confirm":true}
 ### Engagement: like / retweet / comment (a write)
 
 ```bash
-matrix "给这条推 https://x.com/x/status/123 点 50 个赞"
+matrix "Like this tweet https://x.com/x/status/123 50 times"
 ```
 
 ### Headless / batch
 
 ```bash
 MATRIX_HEADLESS=1 MATRIX_AUTO_APPROVE=1 MATRIX_MAX_FOLLOW=300 \
-  matrix "帮 @laura 加 200 个粉"
+  matrix "Add 200 followers for @laura"
 ```
 Headless suppresses prompts. A real write then needs `MATRIX_AUTO_APPROVE=1` **and** must be within the cap, or the gate denies it. Reads and previews always run.
 

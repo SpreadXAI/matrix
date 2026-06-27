@@ -53,7 +53,7 @@ The capability is two things: a **Skill** (phrasing/UX) and the **`spreadx` MCP 
 
 The plugin ([`.claude-plugin/`](.claude-plugin/)) bundles the `spreadx-agent` Skill and registers the remote MCP server. First tool use triggers the one-time browser OAuth (login via Privy, approve scopes). No tokens to paste, nothing at rest.
 
-> Prefer not to use the plugin? Just register the server — `claude mcp add --transport http spreadx https://mcp.spreadx.ai/` — and optionally copy `.claude/skills/spreadx-agent/` into your project's `.claude/skills/`.
+> Prefer not to use the plugin? Just register the server — `claude mcp add --transport http spreadx https://mcp.spreadx.ai/` — and optionally copy `skills/spreadx-agent/` into your project's `.claude/skills/`.
 
 ### Codex
 
@@ -125,10 +125,11 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 
 - `.claude-plugin/` — the Claude Code plugin (marketplace + manifest) bundling the Skill and MCP server
 - `.codex-plugin/` — the Codex plugin (manifest + `mcp.json`) — same Skill and MCP server, for Codex
-- `.claude/skills/spreadx-agent/SKILL.md` — the Skill (UX phrasing over the tools), shared by both plugins
+- `skills/spreadx-agent/SKILL.md` — the Skill (UX phrasing over the tools), shared by both plugins (symlinked into `.claude/skills/` so the harness loads it too)
 - `.mcp.json` — project-mode MCP mount (for cloning this repo directly)
 - `docs/codex-setup.md` — Codex setup
-- `src/core/writeGate.ts` — the deterministic `canUseTool` safety gate
+- `src/core/tools.ts` — the tool registry (single source of truth for the 6 tools; gate + harness derive from it)
+- `src/core/writeGate.ts` — the deterministic `canUseTool` safety gate (fail-safe: unknown spreadx tools require approval, non-spreadx tools are denied)
 - `src/harness/{client,cli}.ts` — the Agent SDK harness + `matrix` CLI
 - `src/mock/` — in-process dev mock (balance + follow), so the harness runs offline
 
