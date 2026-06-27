@@ -17,7 +17,7 @@
     "oauth"
   ],
   "skills": [
-    "./.claude/skills"
+    "./skills"
   ],
   "mcpServers": {
     "spreadx": {

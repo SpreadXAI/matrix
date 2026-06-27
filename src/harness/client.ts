@@ -2,22 +2,18 @@
 import { query, type CanUseTool, type SDKResultSuccess } from "@anthropic-ai/claude-agent-sdk";
 import { loadConfig, type MatrixConfig } from "../core/config.js";
 import { makeWriteGate } from "../core/writeGate.js";
+import { ALLOWED_READ } from "../core/tools.js";
 import { createMockServer } from "../mock/server.js";
 
 const SYSTEM_APPEND = `You operate a SpreadX account via the mcp__spreadx__* tools.
 ALWAYS preview a write tool with confirm:false first, present the shortfall band, and only
 call confirm:true after approval. Never bypass the two-step protocol.`;
 
-// Only READ tools are auto-allowed. The two write tools are deliberately
-// EXCLUDED: the SDK runs allowedTools without consulting canUseTool, so listing
-// a write tool here would bypass the gate. Omitted → they route through
-// canUseTool (the write gate), which is the only headless write authorizer.
-export const ALLOWED = [
-  "mcp__spreadx__get_balance",
-  "mcp__spreadx__list_orders",
-  "mcp__spreadx__get_order",
-  "mcp__spreadx__get_plan_status",
-];
+// Only READ tools are auto-allowed (derived from the tool registry). Write tools — and
+// any unknown spreadx tool — are deliberately EXCLUDED: the SDK runs allowedTools without
+// consulting canUseTool, so listing one here would bypass the gate. Omitted → they route
+// through canUseTool (the write gate), the only headless write authorizer.
+export const ALLOWED = ALLOWED_READ;
 
 export async function runAgent(
   prompt: string,
@@ -45,7 +41,7 @@ export async function runAgent(
     options: {
       model: config.model,
       mcpServers,
-      allowedTools: ALLOWED,
+      allowedTools: [...ALLOWED],
       settingSources: ["project"],
       skills: "all",
       systemPrompt: { type: "preset", preset: "claude_code", append: SYSTEM_APPEND },

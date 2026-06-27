@@ -1,14 +1,7 @@
-export const READ_TOOLS = new Set([
-  "mcp__spreadx__get_balance",
-  "mcp__spreadx__list_orders",
-  "mcp__spreadx__get_order",
-  "mcp__spreadx__get_plan_status",
-]);
+import { READ_TOOLS, WRITE_TOOLS, isSpreadxTool, specFor } from "./tools.js";
 
-export const WRITE_TOOLS = new Set([
-  "mcp__spreadx__create_follow_plan",
-  "mcp__spreadx__create_engagement_plan",
-]);
+// Re-exported so callers (and the allowedTools regression test) have one import site.
+export { READ_TOOLS, WRITE_TOOLS };
 
 export type GateDecision =
   | { behavior: "allow"; updatedInput: Record<string, unknown> }
@@ -32,19 +25,34 @@ export function makeWriteGate(policy: WriteGatePolicy) {
     input: Record<string, unknown>,
   ): Promise<GateDecision> {
     if (READ_TOOLS.has(toolName)) return { behavior: "allow", updatedInput: input };
-    if (!WRITE_TOOLS.has(toolName)) {
-      return { behavior: "deny", message: `tool ${toolName} is not in the spreadx allowlist` };
-    }
-    // Preview (confirm falsy) never mutates state — allow so the model can fetch the dry-run.
-    if (input.confirm !== true) return { behavior: "allow", updatedInput: input };
 
-    // confirm=true => real write. Caps first; they cannot be overridden by approval.
-    const isFollow = toolName === "mcp__spreadx__create_follow_plan";
-    const cap = isFollow ? policy.caps.follow : policy.caps.engagement;
-    const count = isFollow ? Number(input.count ?? 0) : engagementTotal(input);
-    if (!Number.isFinite(count) || count < 1 || count > cap) {
-      return { behavior: "deny", message: `requested count ${count} is invalid or exceeds cap ${cap}` };
+    // Anything outside this server's namespace (Bash, Read, Write, …) is denied:
+    // the harness is a spreadx-only client.
+    if (!isSpreadxTool(toolName)) {
+      return { behavior: "deny", message: `tool ${toolName} is not a spreadx tool` };
     }
+
+    // A spreadx write tool — either known (in the registry) or unknown (added
+    // server-side after this client shipped). Known writes expose a side-effect-free
+    // dry-run preview (confirm:false). An UNKNOWN spreadx tool gets no free pass:
+    // its semantics are unknown, so it always requires approval — fail SAFE, not
+    // fail BROKEN. (Server-supplied readOnly/destructive hints are deliberately not
+    // trusted here; the MCP spec treats them as advisory, not a security boundary.)
+    const spec = specFor(toolName);
+    if (spec && input.confirm !== true) {
+      return { behavior: "allow", updatedInput: input };
+    }
+
+    // Real write: confirm=true on a known write, or any call to an unknown spreadx tool.
+    // Caps apply only to known writes that declare one; they cannot be overridden by approval.
+    if (spec?.capKey) {
+      const cap = policy.caps[spec.capKey];
+      const count = spec.countFrom === "operations" ? engagementTotal(input) : Number(input.count ?? 0);
+      if (!Number.isFinite(count) || count < 1 || count > cap) {
+        return { behavior: "deny", message: `requested count ${count} is invalid or exceeds cap ${cap}` };
+      }
+    }
+
     if (policy.mode === "headless") {
       return policy.autoApproveWrites
         ? { behavior: "allow", updatedInput: input }
