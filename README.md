@@ -1,151 +1,151 @@
 # SpreadX Matrix
 
-**让你的 AI agent 代你操作 SpreadX 账号。** 安装一个插件、在浏览器里授权一次,之后直接用自然语言提要求 —— *"查一下我的余额"*、*"帮 @laura 加 200 个 crypto 英文粉"*、*"给这条推点 50 个赞"* —— Claude(或 Codex)就会通过 **spreadx MCP 服务** 完成。任何真实写操作之前,都会先给出 dry-run 预览并等你确认。
+**Operate a SpreadX account from your AI agent.** Install one plugin, authorize once in the browser, then just ask — *"查一下我的余额"*, *"帮 @laura 加 200 个 crypto 英文粉"*, *"给这条推点 50 个赞"* — and Claude (or Codex) does it through the **spreadx MCP server**, with a dry-run preview and your approval before any real write.
 
-> 本仓库是**客户端**。MCP **服务端**(`spreadx-mcp-user`,一个位于 `https://mcp.spreadx.ai/` 的 OAuth Resource Server)在 **`spreadx-platform`** 仓库。本仓库只提供 Skill、MCP 接入、以及一个独立 harness —— 不复制任何服务端业务逻辑,也不自行做任何鉴权判断。
+> This repo is the **client** side. The MCP **server** (`spreadx-mcp-user`, an OAuth Resource Server at `https://mcp.spreadx.ai/`) lives in **`spreadx-platform`**. This repo ships the Skill, the MCP wiring, and a standalone harness — it copies no server logic and makes no authorization decisions of its own.
 
 ---
 
-## 快速开始 (Quickstart)
+## Quickstart
 
-**Claude Code** —— 安装插件,然后直接问:
+**Claude Code** — install the plugin, then ask:
 
 ```
 /plugin marketplace add SpreadXAI/matrix
 /plugin install spreadx-matrix@spreadx-matrix
 ```
 
-这会同时注册 `spreadx` MCP 服务**和** `spreadx-agent` Skill。首次使用时浏览器会弹出一次性 OAuth 授权。然后:
+That registers the `spreadx` MCP server **and** the `spreadx-agent` Skill. On first use a browser window opens for a one-time OAuth authorization. Then:
 
 ```
 查一下我的余额
 帮 @laura 加 200 个 crypto 英文粉
 ```
 
-就这么简单。下面是 Codex、独立 harness、以及安全闸的工作方式。
+That's it. Read on for Codex, the standalone harness, and how the safety gate works.
 
 ---
 
-## 工作原理 (How it works)
+## How it works
 
-你用大白话提要求,agent **不会**盲目地直接发起破坏性写操作。`spreadx-agent` Skill(以及对没有 skill 的客户端而言,MCP 工具自身的 description)强制执行一套**两步协议**:每个写操作先以 **dry-run 预览** 运行(池子大小、预计能选多少账号、缺口 shortfall、ETA),展示给你,**你确认后**才真正执行。读操作(余额、订单、plan 进度)直接返回。
+You speak in plain language; the agent does **not** fire off a destructive write blindly. The `spreadx-agent` Skill (and, for clients without skills, the MCP tools' own descriptions) enforce a **two-step protocol**: every write is first run as a **dry-run preview** (pool size, how many accounts would be selected, shortfall, ETA), shown to you, and only executed after you approve. Reads (balance, orders, plan status) run directly.
 
-协议写在工具里,所以 **Codex 不需要任何 skill 也会遵守**。Claude 端的 Skill 只是上面一层话术。而在独立 harness 里,真正决定"是否执行真实写操作"的是一个确定性的 `canUseTool` 闸 —— 不是模型。
+The protocol lives in the tools, so **Codex obeys it with no Skill at all**. The Claude Skill is pure phrasing on top. And in the standalone harness, a deterministic `canUseTool` gate — not the model — is the final authority on whether a real write runs.
 
 ---
 
-## 安装 (Installation)
+## Installation
 
-这套能力由两部分组成:一个 **Skill**(话术/UX)和 **`spreadx` MCP 服务**(真正的工具)。具体怎么装,取决于你的客户端。
+The capability is two things: a **Skill** (phrasing/UX) and the **`spreadx` MCP server** (the actual tools). How you install them depends on your client.
 
-### Claude Code(插件 —— 一次装好两者)
+### Claude Code (plugin — installs both)
 
 ```
 /plugin marketplace add SpreadXAI/matrix
 /plugin install spreadx-matrix@spreadx-matrix
 ```
 
-插件([`.claude-plugin/`](.claude-plugin/))打包了 `spreadx-agent` Skill 并注册了远程 MCP 服务。首次调用工具时触发一次性浏览器 OAuth(用 Privy 登录、勾选授权 scope)。无需粘贴任何 token,无密钥落盘。
+The plugin ([`.claude-plugin/`](.claude-plugin/)) bundles the `spreadx-agent` Skill and registers the remote MCP server. First tool use triggers the one-time browser OAuth (login via Privy, approve scopes). No tokens to paste, nothing at rest.
 
-> 不想用插件?只注册服务即可 —— `claude mcp add --transport http spreadx https://mcp.spreadx.ai/`,并可选地把 `.claude/skills/spreadx-agent/` 复制进你项目的 `.claude/skills/`。
+> Prefer not to use the plugin? Just register the server — `claude mcp add --transport http spreadx https://mcp.spreadx.ai/` — and optionally copy `.claude/skills/spreadx-agent/` into your project's `.claude/skills/`.
 
 ### Codex
 
-Codex 是个没有 Skill 系统的 MCP 客户端;协议由工具自身的 description 携带。加到 `~/.codex/config.toml`:
+Codex is an MCP client with no Skill system; the tools' own descriptions carry the protocol. Add to `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.spreadx]
 url = "https://mcp.spreadx.ai/"
 ```
 
-然后 `codex mcp login spreadx`。Codex 的写操作由**服务端**守卫 + Codex 自带的确认 UI 把关。详见 [`docs/codex-setup.md`](docs/codex-setup.md)。
+Then `codex mcp login spreadx`. Codex writes are gated by the **server-side** guard plus Codex's own confirm UI. Full notes: [`docs/codex-setup.md`](docs/codex-setup.md).
 
-### 独立 harness(脚本 / 无人值守)
+### Standalone harness (scripts / headless)
 
-一个 `matrix` CLI,程序化地驱动 agent,内置确定性写闸。
+A `matrix` CLI that drives the agent programmatically, with the deterministic write gate built in.
 
 ```bash
 git clone https://github.com/SpreadXAI/matrix && cd matrix
 pnpm install
-cp .env.example .env          # 设置 ANTHROPIC_API_KEY;离线开发用 SPREADX_MCP_URL=mock
+cp .env.example .env          # set ANTHROPIC_API_KEY; SPREADX_MCP_URL=mock for offline dev
 node --env-file=.env --import tsx src/harness/cli.ts "查一下我的余额"
 ```
 
-`SPREADX_MCP_URL=mock` 会跑内置的进程内 mock —— 不需要平台、不需要 token —— 让你今天就能体验整个流程。所有环境变量和选项见 [`docs/usage.md`](docs/usage.md)。
+`SPREADX_MCP_URL=mock` runs against a built-in in-process mock — no platform, no token — so you can try the flow today. See [`docs/usage.md`](docs/usage.md) for every env var and option.
 
 ---
 
-## 基本工作流 (The Basic Workflow)
+## The Basic Workflow
 
-装好之后,任何任务都是同样的四个阶段:
+Once installed, the loop for any task is the same four phases:
 
-1. **授权(一次)** —— 客户端在浏览器里跑 OAuth 流程。授权由 authorization server 持有,你不用再次登录。
-2. **用自然语言提要求** —— `spreadx-agent` Skill 把你的话映射到对应的 `mcp__spreadx__*` 工具。读操作立即返回。
-3. **写之前先预览** —— 对涨粉/互动 plan,agent 先用 `confirm:false` 调用,展示 dry-run:池子大小、预计选号、**shortfall 分档**(`≤5%` 继续 · `5–10%` 问 · `>10%` 不做)、ETA。
-4. **确认后再执行** —— 你点头后,它用 `confirm:true` 再调一次。在 harness 里这一步过闸(你的 `y/N`,或 headless 模式下在额度内自动批准);在编辑器里则是客户端自带的确认 UI。任何 shortfall 超过 10% 的写操作,服务端都会拒绝。
+1. **Authorize (once)** — the client runs the OAuth flow in your browser. The grant is held by the authorization server; you won't log in again.
+2. **Ask in natural language** — the `spreadx-agent` Skill maps your request to the right `mcp__spreadx__*` tool. Reads return immediately.
+3. **Preview before writing** — for a follow/engagement plan, the agent calls the tool with `confirm:false` first and shows you the dry-run: pool size, would-select, **shortfall band** (`≤5%` proceed · `5–10%` ask · `>10%` don't), and ETA.
+4. **Approve, then execute** — on your go-ahead it re-calls with `confirm:true`. In the harness this passes through the gate (your `y/N`, or headless auto-approve within caps); in editors it's the client's own approval UI. The server rejects any write whose shortfall exceeds 10%.
 
-之后随时**查进度**(`get_plan_status`)。涨粉(`create_follow_plan`)和赞/转/评(`create_engagement_plan`)走的是同一套工作流。
+Then **check status** (`get_plan_status`) any time. The same workflow covers `create_follow_plan` (涨粉) and `create_engagement_plan` (赞/转/评).
 
 ```
-你:    帮 @laura 加 200 个 crypto 英文粉
-Agent: [dry-run] 池子 1,000 · 预计选 200 · 缺口 0(足够)· ETA ~12 分钟。执行?
-你:    ok
-Agent: [confirm] plan mock-plan-1 已创建 ✅
+You:    帮 @laura 加 200 个 crypto 英文粉
+Agent:  [dry-run] pool 1,000 · would select 200 · shortfall 0 (ok) · ETA ~12m. 执行?
+You:    ok
+Agent:  [confirm] plan mock-plan-1 created ✅
 ```
 
 ---
 
-## 包含什么 (What's Inside)
+## What's Inside
 
-**工具**(在 agent 侧暴露为 `mcp__spreadx__<tool>`):
+**Tools** (exposed to the agent as `mcp__spreadx__<tool>`):
 
-| 工具 | 类型 | Scope(服务端强制) | 作用 |
+| Tool | Kind | Scope (server-enforced) | What |
 |---|---|---|---|
-| `get_balance` | 读 | `balance:read` | 积分 / 钱包 / 套餐 |
-| `list_orders` | 读 | `orders:read` | 充值订单(keyset 分页) |
-| `get_order` | 读 | `orders:read` | 单个订单 |
-| `get_plan_status` | 读 | `orders:read` | 某个 plan 的进度 |
-| `create_follow_plan` | **写** | `plans:write` | 给某用户涨粉 |
-| `create_engagement_plan` | **写** | `plans:write` | 对某条推点赞 / 转发 / 评论 |
+| `get_balance` | read | `balance:read` | points / wallet / package |
+| `list_orders` | read | `orders:read` | recharge orders (keyset paging) |
+| `get_order` | read | `orders:read` | one order |
+| `get_plan_status` | read | `orders:read` | a plan's progress |
+| `create_follow_plan` | **write** | `plans:write` | add followers to a user |
+| `create_engagement_plan` | **write** | `plans:write` | like / retweet / comment on a tweet |
 
-**本仓库的组成:**
+**Components in this repo:**
 
-- `.claude-plugin/` —— Claude Code 插件(marketplace + manifest),打包 Skill 与 MCP 服务
-- `.claude/skills/spreadx-agent/SKILL.md` —— Skill(工具之上的话术/UX)
-- `.mcp.json` —— 项目模式的 MCP 挂载(直接克隆本仓库时用)
-- `docs/codex-setup.md` —— Codex 配置
-- `src/core/writeGate.ts` —— 确定性的 `canUseTool` 安全闸
-- `src/harness/{client,cli}.ts` —— Agent SDK harness + `matrix` CLI
-- `src/mock/` —— 进程内 dev mock(余额 + 涨粉),让 harness 能离线运行
+- `.claude-plugin/` — the Claude Code plugin (marketplace + manifest) bundling the Skill and MCP server
+- `.claude/skills/spreadx-agent/SKILL.md` — the Skill (UX phrasing over the tools)
+- `.mcp.json` — project-mode MCP mount (for cloning this repo directly)
+- `docs/codex-setup.md` — Codex setup
+- `src/core/writeGate.ts` — the deterministic `canUseTool` safety gate
+- `src/harness/{client,cli}.ts` — the Agent SDK harness + `matrix` CLI
+- `src/mock/` — in-process dev mock (balance + follow), so the harness runs offline
 
-**安全闸**(harness):读工具和写**预览**自动放行;真实写(`confirm:true`)必须先过额度上限(`MATRIX_MAX_FOLLOW` / `MATRIX_MAX_ENGAGEMENT`),再过批准(交互式 `y/N`,或 headless 下 `MATRIX_AUTO_APPROVE=1`)。它对缺失/非法的 count 以及任何非 spreadx 工具**失败即拒(fail closed)**,而且写工具被刻意排除在 SDK 的 `allowedTools` 之外,所以无法绕过闸被自动放行。由代码强制、由测试锁定 —— 与模型无关。
+**The safety gate** (harness): read tools and write *previews* are auto-allowed; a real write (`confirm:true`) must pass an amount cap (`MATRIX_MAX_FOLLOW` / `MATRIX_MAX_ENGAGEMENT`) and then approval (interactive `y/N`, or `MATRIX_AUTO_APPROVE=1` headless). It **fails closed** on a missing/invalid count or any non-spreadx tool, and write tools are deliberately kept out of the SDK's `allowedTools` so they can't be auto-approved around the gate. Enforced by code, locked by tests — independent of the model.
 
 ---
 
-## 更新 (Updating)
+## Updating
 
 ```
-/plugin marketplace update spreadx-matrix    # 拉取最新版本
+/plugin marketplace update spreadx-matrix    # fetch the latest version
 ```
 
-卸载用 `/plugin uninstall spreadx-matrix`。harness 用 `git pull && pnpm install`。
+Uninstall with `/plugin uninstall spreadx-matrix`. For the harness, `git pull && pnpm install`.
 
 ---
 
-## 安全 (Security)
+## Security
 
-无密钥落盘。插件/编辑器路径用客户端托管的 OAuth(任何配置里都不放 token);harness 只从环境变量读 `SPREADX_ACCESS_TOKEN`。`.env` 和 `.mcp.local.json` 已被 git 忽略 —— 永远别提交 token。吊销在 OAuth 层(平台 AS / dashboard);access token 的短 TTL 把泄露窗口限到最小。
+No secrets at rest. The plugin/editor path uses client-managed OAuth (no token in any config); the harness reads `SPREADX_ACCESS_TOKEN` from env only. `.env` and `.mcp.local.json` are git-ignored — never commit a token. Revocation lives in the OAuth layer (the platform AS / dashboard); the access token's short TTL bounds any leak.
 
 ---
 
-## 状态与路线图 (Status & roadmap)
+## Status & roadmap
 
-- ✅ 插件、Skill、编辑器配置、harness、确定性写闸、进程内 mock —— 已实现并测试(23 个测试)。
-- ⏳ **真实服务端** —— MCP 地址 `mcp.spreadx.ai` 要等 `spreadx-platform` 完成 **Phase B.4**(FastMCP streamable-http)并部署后才可达。在那之前用 `SPREADX_MCP_URL=mock`;切换只需改一个环境变量。
-- ⏳ **真实模型 smoke** —— LLM 驱动的工具循环需要 `ANTHROPIC_API_KEY`(对着 mock 跑)。闸、config、mock 逻辑已由测试 + 无 key 的运行时 smoke 验证。
+- ✅ Plugin, Skill, editor config, harness, deterministic write gate, in-process mock — implemented and tested (23 tests).
+- ⏳ **Real server** — the MCP URL `mcp.spreadx.ai` is reachable once `spreadx-platform` ships **Phase B.4** (FastMCP streamable-http) and deploys. Until then use `SPREADX_MCP_URL=mock`; cutover is one env var.
+- ⏳ **Live model smoke** — the LLM-driven tool loop needs an `ANTHROPIC_API_KEY` (run it against the mock). The gate, config, and mock logic are already proven by tests + no-key runtime smokes.
 
-## 另见 (See also)
+## See also
 
-- **[`docs/usage.md`](docs/usage.md)** —— 安装与使用,详细版
-- **[`docs/design/spreadx-matrix.md`](docs/design/spreadx-matrix.md)** —— 设计 spec
-- **`spreadx-platform`** —— MCP 服务端(`spreadx-mcp-user`)与 OAuth authorization server
+- **[`docs/usage.md`](docs/usage.md)** — installation & usage, in depth
+- **[`docs/design/spreadx-matrix.md`](docs/design/spreadx-matrix.md)** — design spec
+- **`spreadx-platform`** — the MCP server (`spreadx-mcp-user`) and OAuth authorization server
