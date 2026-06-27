@@ -1,0 +1,21 @@
+{
+  "name": "spreadx-matrix",
+  "description": "SpreadX agent client — a Skill plus the spreadx MCP server for operating a SpreadX account (balance, orders, follow, like) from your AI agent.",
+  "owner": {
+    "name": "SpreadX",
+    "email": "milhous.zhang@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "spreadx-matrix",
+      "description": "Operate a SpreadX account from your agent: check balance/orders and run follow / like-retweet-comment plans via the spreadx MCP server, with a dry-run→confirm safety protocol. Installs the spreadx-agent Skill and registers the remote MCP server (one-time OAuth).",
+      "version": "0.1.0",
+      "source": "./",
+      "author": {
+        "name": "SpreadX",
+        "email": "milhous.zhang@gmail.com"
+      },
+      "homepage": "https://github.com/SpreadXAI/matrix"
+    }
+  ]
+}

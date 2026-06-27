@@ -26,26 +26,38 @@ Both talk to the same MCP server and obey the same write protocol.
 
 ## Install — Editor path
 
-### Claude Code
+### Claude Code — plugin (recommended)
 
-1. Open this repo in Claude Code. It already contains [`.mcp.json`](../.mcp.json):
+Install the plugin; it registers the `spreadx` MCP server **and** the `spreadx-agent` Skill in one step:
 
-   ```json
-   { "mcpServers": { "spreadx": { "type": "http", "url": "https://mcp.spreadx.ai/" } } }
-   ```
+```
+/plugin marketplace add SpreadXAI/matrix
+/plugin install spreadx-matrix@spreadx-matrix
+```
 
-   To mount it elsewhere instead, run:
-   ```bash
-   claude mcp add --transport http spreadx https://mcp.spreadx.ai/
-   ```
+Then on the first tool call Claude Code performs the OAuth flow — a browser window opens, you log in (via Privy) and approve the requested scopes **once**. The refresh token is held by the authorization server; you won't log in again.
 
-2. On the first tool call, Claude Code performs the OAuth flow — a browser window opens, you log in (via Privy) and approve the requested scopes **once**. The refresh token is held by the authorization server; you won't log in again.
+Update / remove later with:
+```
+/plugin marketplace update spreadx-matrix
+/plugin uninstall spreadx-matrix
+```
 
-3. The **`spreadx-agent`** Skill auto-loads (it's in `.claude/skills/`) whenever your request looks like balance / orders / follow / like. No manual activation.
+### Claude Code — without the plugin
 
-4. Ask away (see [Usage](#usage)).
+If you'd rather not use the plugin (e.g. you cloned this repo to work on it), the repo already contains [`.mcp.json`](../.mcp.json):
 
-**Local dev against the mock:** start the mock-backed harness instead (the editor path needs a live HTTP server; the mock is in-process to the harness). For editor testing without the platform, point a scratch config at a locally-served MCP — but the simplest offline loop is the harness below.
+```json
+{ "mcpServers": { "spreadx": { "type": "http", "url": "https://mcp.spreadx.ai/" } } }
+```
+
+Open the repo in Claude Code (it auto-mounts), or register the server anywhere with:
+```bash
+claude mcp add --transport http spreadx https://mcp.spreadx.ai/
+```
+The **`spreadx-agent`** Skill auto-loads from `.claude/skills/` when your request looks like balance / orders / follow / like.
+
+**Local dev against the mock:** the editor path needs a live HTTP server; the mock is in-process to the harness. For an offline loop today, use the harness below with `SPREADX_MCP_URL=mock`.
 
 ### Codex
 
