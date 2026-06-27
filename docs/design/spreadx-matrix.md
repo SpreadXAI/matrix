@@ -79,15 +79,15 @@ MCP structured tool output (spec 2025-06-18, STABLE) is the recommended way to r
 |---|---|---|
 | Claude Code (`.mcp.json`) | client-managed OAuth (DCR + PKCE + browser) | zero-config token |
 | Codex (`config.toml`) | `codex mcp login spreadx` | needs a recent Codex |
-| **harness (v1)** | the `SPREADX_ACCESS_TOKEN` env var — **paste** a short-lived (~15min) access token | see "Known limitation" below |
+| **harness** | `matrix login` (browser Auth Code + PKCE, once) — or paste `SPREADX_ACCESS_TOKEN` for a one-off | unattended-capable |
 
-**Known limitation / explicitly not done (YAGNI):** harness v1 does **not** build in OAuth (no DCR / PKCE / browser / refresh-token storage). True unattended use needs a `matrix login` (authorize once in the browser → store the refresh token → exchange it at the AS `/oauth/token` for an access token before each run). **That flow is explicitly deferred** until the harness genuinely needs to run long-term, to avoid building a whole OAuth client now.
+**Unattended auth (`matrix login`, implemented in `src/auth/`):** `matrix login` discovers the AS from the MCP resource (RFC 9728 → RFC 8414), dynamically registers a public loopback client (RFC 7591), runs Authorization Code + S256 PKCE (RFC 7636) with the `resource` indicator (RFC 8707) and `offline_access`, and stores the **rotating refresh token** at `~/.config/spreadx-matrix/credentials.json` (mode 0600), keyed by MCP URL. Before each run, `resolveAccessToken` reuses a still-valid access token or refreshes it (persisting the rotated refresh token); if there are no credentials it tells the user to run `matrix login`. Priority order: mock → `SPREADX_ACCESS_TOKEN` env override → stored credentials. The token store is an interface, so a macOS Keychain backend can replace the 0600 file later without touching callers.
 
 ## Scope / Not in scope
 
-**In scope:** `.mcp.json`, the `spreadx-agent` Skill, the Codex doc, the Agent SDK harness + CLI, the deterministic write gate, the in-process dev mock, and the gate's tests (which do not depend on the LLM).
+**In scope:** `.mcp.json`, the `spreadx-agent` Skill, the Codex doc, the Agent SDK harness + CLI, the deterministic write gate, the in-process dev mock, the OAuth **client** (`matrix login`: discovery + DCR + PKCE + refresh, in `src/auth/`), and the unit tests (which do not depend on the LLM).
 
-**Not in scope:** the MCP server (owned by the platform), the OAuth AS / DCR / refresh client (v1), production secret management, re-implementing the server's shortfall/scope logic, and mocks for `list_orders`/`get_order`/`get_plan_status`/`create_engagement_plan` (end-to-end verification runs against platform staging).
+**Not in scope:** the MCP server and the OAuth **Authorization Server** (both owned by the platform), production-grade secret storage beyond a 0600 file (macOS Keychain is a follow-up behind the same interface), re-implementing the server's shortfall/scope logic, and mocks for `list_orders`/`get_order`/`get_plan_status`/`create_engagement_plan` (end-to-end verification runs against platform staging).
 
 ## Cross-repo dependency and cutover
 

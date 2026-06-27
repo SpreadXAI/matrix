@@ -101,7 +101,7 @@ Edit `.env`:
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | **Required.** The Claude Agent SDK uses it to drive the model. |
 | `SPREADX_MCP_URL` | `mock` | `mock` = in-process dev mock; otherwise the server URL (e.g. `https://mcp.spreadx.ai/`). |
-| `SPREADX_ACCESS_TOKEN` | — | Bearer token for the **real** server (paste a short-lived one). Ignored when URL is `mock`. |
+| `SPREADX_ACCESS_TOKEN` | — | Optional one-off Bearer token override. Normally unset — use `matrix login` instead. Ignored when URL is `mock`. |
 | `MATRIX_MODEL` | `claude-sonnet-4-6` | Model the harness drives. |
 | `MATRIX_HEADLESS` | `0` | `1` disables interactive approval prompts. |
 | `MATRIX_AUTO_APPROVE` | `0` | `1` lets headless mode commit writes (still capped). |
@@ -120,6 +120,21 @@ Install the `matrix` command globally (optional):
 ```bash
 pnpm build && pnpm link --global   # then: matrix "Check my balance"
 ```
+
+---
+
+## Login (real server)
+
+Against the real server you authorize **once**, then the harness runs unattended:
+
+```bash
+matrix login      # opens the browser (Auth Code + PKCE); approve, done
+matrix logout     # forget the stored credentials for the current SPREADX_MCP_URL
+```
+
+`matrix login` discovers the authorization server from the MCP resource (RFC 9728 → RFC 8414), registers a loopback client (DCR), runs S256 PKCE with `offline_access`, and stores the **rotating refresh token** at `~/.config/spreadx-matrix/credentials.json` (mode `0600`), keyed by MCP URL. Before each run the harness reuses a valid access token or refreshes it; if nothing is stored it tells you to `matrix login`. Token resolution priority: `mock` → `SPREADX_ACCESS_TOKEN` (one-off override) → stored credentials. (`login` is not needed — and refused — for `SPREADX_MCP_URL=mock`.)
+
+> The 0600 file is the v1 store. A macOS Keychain backend can replace it behind the same `TokenStore` interface without changing callers.
 
 ---
 
