@@ -65,6 +65,14 @@ This repo is the **consumer side** of SpreadX's "agent acts on behalf of the use
   `create_follow_plan` mirrors the server's "reject `confirm=true` when shortfall>10%" guard.
 - Active only when `SPREADX_MCP_URL` points at the mock. **Discardable once platform staging is live.**
 
+## Structured tool output
+
+MCP structured tool output (spec 2025-06-18, STABLE) is the recommended way to return tool results: a tool declares an `outputSchema` and returns `structuredContent` (the typed object) **and** a text block (the serialized JSON, a backward-compatible fallback). This lets clients validate/consume typed data instead of parsing free-text JSON.
+
+- **This repo:** the dev mock returns `structuredContent` next to the text fallback (via `toolResult()`), and the output shapes are typed contracts in `src/mock/tools.ts` (`BalanceOutput`, `FollowPlanOutput`). The mock also sets MCP tool **annotations** (`readOnlyHint` etc.) to model a well-behaved server — though the write gate deliberately does **not** trust them (the spec treats annotations as advisory, not a security boundary).
+- **SDK limit:** the Agent SDK's in-process `tool()` can attach annotations and return `structuredContent`, but it cannot *declare* an `outputSchema`. Whether `structuredContent` is surfaced to the model is SDK-internal; the text fallback always works.
+- **Cross-repo requirement (platform):** the real `spreadx-mcp-user` server should declare `outputSchema` and return `structuredContent` matching these shapes for every tool. The client/SDK consumes `structuredContent` when present; until the server ships it, results degrade gracefully to the text fallback.
+
 ## Authorization model (who gets the token)
 
 | Path | How the token is obtained | Notes |

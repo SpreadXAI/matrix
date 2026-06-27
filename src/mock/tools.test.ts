@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { balancePayload, followPlanResult, defaultState } from "./tools.js";
+import { balancePayload, followPlanResult, defaultState, toolResult } from "./tools.js";
 
 describe("mock tools", () => {
   it("balance payload", () => {
@@ -18,5 +18,14 @@ describe("mock tools", () => {
   it("rejects confirm=true when shortfall >10%", () => {
     const r = followPlanResult({ ...defaultState(), pool: 100 }, { username: "laura", count: 200, confirm: true }) as any;
     expect(r).toMatchObject({ error: "shortfall_exceeds_threshold" });
+  });
+  it("toolResult emits structuredContent AND a text fallback (MCP structured output)", () => {
+    const data = balancePayload(defaultState());
+    const res = toolResult(data);
+    // structuredContent carries the typed object for programmatic consumption…
+    expect(res.structuredContent).toEqual(data);
+    // …and content[].text carries the same JSON for clients that don't read structuredContent.
+    expect(res.content[0]).toEqual({ type: "text", text: JSON.stringify(data) });
+    expect(JSON.parse(res.content[0].text)).toEqual(res.structuredContent);
   });
 });
