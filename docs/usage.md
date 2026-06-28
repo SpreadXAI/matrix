@@ -134,9 +134,11 @@ matrix status     # show whether you're logged in and how long the access token 
 matrix logout     # forget the stored credentials for the current SPREADX_MCP_URL
 ```
 
-`matrix login` discovers the authorization server from the MCP resource (RFC 9728 → RFC 8414), registers a loopback client (DCR), runs S256 PKCE with `offline_access`, and stores the **rotating refresh token** keyed by MCP URL. Before each run the harness reuses a valid access token or refreshes it; if nothing is stored it tells you to `matrix login`. Token resolution priority: `mock` → `SPREADX_ACCESS_TOKEN` (one-off override) → stored credentials. (`login` is not needed — and refused — for `SPREADX_MCP_URL=mock`.)
+`matrix login` discovers the authorization server from the MCP resource (RFC 9728 → RFC 8414), runs S256 PKCE with `offline_access` using a **fixed pre-registered client id** (no dynamic registration), and stores the **rotating refresh token** keyed by MCP URL. Before each run the harness reuses a valid access token or refreshes it; if nothing is stored it tells you to `matrix login`. Token resolution priority: `mock` → `SPREADX_ACCESS_TOKEN` (one-off override) → stored credentials. (`login` is not needed — and refused — for `SPREADX_MCP_URL=mock`.)
 
 > Tokens are stored in the **macOS Keychain** by default (encrypted at rest); on other platforms, or with `MATRIX_TOKEN_STORE=file`, a `0600` file at `~/.config/spreadx-matrix/credentials.json` is used instead.
+
+> **Upgrading?** matrix no longer self-registers a per-machine client; it uses one fixed client id baked into the CLI. Credentials saved by an older build carry a registration-issued client id that the server no longer honors, so **run `matrix login` once** after upgrading to re-authorize. (No backward compatibility is kept for the old id.)
 
 ---
 

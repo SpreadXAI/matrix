@@ -25,7 +25,6 @@ describe("discover", () => {
         issuer: "https://as.example",
         authorization_endpoint: "https://as.example/oauth/authorize",
         token_endpoint: "https://as.example/oauth/token",
-        registration_endpoint: "https://as.example/oauth/register",
         code_challenge_methods_supported: ["S256"],
       }),
     });
@@ -33,8 +32,8 @@ describe("discover", () => {
     expect(meta).toMatchObject({
       authorizationEndpoint: "https://as.example/oauth/authorize",
       tokenEndpoint: "https://as.example/oauth/token",
-      registrationEndpoint: "https://as.example/oauth/register",
     });
+    expect(meta).not.toHaveProperty("registrationEndpoint");
   });
 
   it("refuses an AS that does not advertise S256 PKCE", async () => {
