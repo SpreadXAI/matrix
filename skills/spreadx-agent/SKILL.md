@@ -14,7 +14,8 @@ Translate natural-language asks into `mcp__spreadx__*` tool calls. Always previe
 | Balance / points / package | `get_balance` (read-only) |
 | List orders | `list_orders` (read-only) |
 | One order | `get_order` (read-only) |
-| Plan progress | `get_plan_status` (read-only) |
+| List my plans / how are they doing | `list_plans` (read-only) |
+| One plan's progress | `get_plan` (read-only) |
 | Add followers | `create_follow_plan` (write) |
 | Like / retweet / comment | `create_engagement_plan` (write) |
 

@@ -192,7 +192,7 @@ The gate is `src/core/writeGate.ts`, wired as the SDK's `canUseTool`:
 
 ```
 tool call
- ├─ read tool (get_balance/list_orders/get_order/get_plan_status) ─────────────▶ ALLOW
+ ├─ read tool (get_balance/list_orders/get_order/list_plans/get_plan) ─────────▶ ALLOW
  ├─ not an mcp__spreadx__* tool ───────────────────────────────────────────────▶ DENY
  └─ write tool (create_follow_plan / create_engagement_plan)
       ├─ confirm ≠ true  (preview) ───────────────────────────────────────────▶ ALLOW  (no side effects)
@@ -211,7 +211,7 @@ The model cannot route around this — write tools are excluded from the SDK's `
 `SPREADX_MCP_URL=mock` swaps the remote server for an in-process MCP server (`src/mock/server.ts`) so you can develop and demo offline.
 
 - **Implements:** `get_balance` and `create_follow_plan` (incl. the dry-run preview and the server's `shortfall > 10% ⇒ reject confirm:true` guard).
-- **Does not implement:** `list_orders`, `get_order`, `get_plan_status`, `create_engagement_plan`. Asking for orders or a like against the mock will fail — verify those against platform staging.
+- **Does not implement:** `list_orders`, `get_order`, `list_plans`, `get_plan`, `create_engagement_plan`. Asking for orders or a like against the mock will fail — verify those against the real server (`list_plans`/`get_plan` already ship in `spreadx-mcp-user`).
 - It's **dev-only** and throwaway once the real server is deployed.
 
 ---

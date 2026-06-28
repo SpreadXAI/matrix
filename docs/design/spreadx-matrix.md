@@ -55,7 +55,7 @@ This repo is the **consumer side** of SpreadX's "agent acts on behalf of the use
 - `runAgent(prompt)`: one headless `query()` that mounts the spreadx MCP (`type: "http"` + `Authorization: Bearer`), loads the `spreadx-agent` skill, and uses `makeWriteGate(...)` as `canUseTool`.
 - `matrix` CLI: free-text passthrough (`matrix "Check my balance"` / `matrix "Add 200 followers for @laura"`); in interactive mode writes go through a stdin approval.
 - **Deterministic write-gate semantics**:
-  - Read tools (`get_balance`/`list_orders`/`get_order`/`get_plan_status`) → allow directly.
+  - Read tools (`get_balance`/`list_orders`/`get_order`/`list_plans`/`get_plan`) → allow directly.
   - A write tool with `confirm` not true (preview) → allow (the preview has no side effects).
   - A write tool with `confirm=true` → check caps first (over `MATRIX_MAX_FOLLOW`/`MATRIX_MAX_ENGAGEMENT` → deny); interactive → ask the human; headless → allow only if `MATRIX_AUTO_APPROVE=1` and within cap, else deny.
   - Any tool outside the `mcp__spreadx__*` namespace → deny (allowlist). An *unknown* spreadx tool fails safe: it is treated as a write and always requires approval.
@@ -87,7 +87,7 @@ MCP structured tool output (spec 2025-06-18, STABLE) is the recommended way to r
 
 **In scope:** `.mcp.json`, the `spreadx-agent` Skill, the Codex doc, the Agent SDK harness + CLI, the deterministic write gate, the in-process dev mock, the OAuth **client** (`matrix login`: discovery + PKCE + refresh with a fixed pre-registered client id, in `src/auth/`), and the unit tests (which do not depend on the LLM).
 
-**Not in scope:** the MCP server and the OAuth **Authorization Server** (both owned by the platform), re-implementing the server's shortfall/scope logic, and mocks for `list_orders`/`get_order`/`get_plan_status`/`create_engagement_plan` (end-to-end verification runs against platform staging).
+**Not in scope:** the MCP server and the OAuth **Authorization Server** (both owned by the platform), re-implementing the server's shortfall/scope logic, and mocks for `list_orders`/`get_order`/`list_plans`/`get_plan`/`create_engagement_plan` (end-to-end verification runs against platform staging).
 
 ## Cross-repo dependency and cutover
 

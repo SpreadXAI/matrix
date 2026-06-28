@@ -21,7 +21,8 @@ export const TOOLS: readonly ToolSpec[] = [
   { name: "get_balance", kind: "read" },
   { name: "list_orders", kind: "read" },
   { name: "get_order", kind: "read" },
-  { name: "get_plan_status", kind: "read" },
+  { name: "list_plans", kind: "read" },
+  { name: "get_plan", kind: "read" },
   { name: "create_follow_plan", kind: "write", capKey: "follow", countFrom: "count" },
   { name: "create_engagement_plan", kind: "write", capKey: "engagement", countFrom: "operations" },
 ];

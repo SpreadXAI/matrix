@@ -108,7 +108,7 @@ Once installed, the loop for any task is the same four phases:
 3. **Preview before writing** — for a follow/engagement plan, the agent calls the tool with `confirm:false` first and shows you the dry-run: pool size, would-select, **shortfall band** (`≤5%` proceed · `5–10%` ask · `>10%` don't), and ETA.
 4. **Approve, then execute** — on your go-ahead it re-calls with `confirm:true`. In the harness this passes through the gate (your `y/N`, or headless auto-approve within caps); in editors it's the client's own approval UI. The server rejects any write whose shortfall exceeds 10%.
 
-Then **check status** (`get_plan_status`) any time. The same workflow covers `create_follow_plan` (add followers) and `create_engagement_plan` (like / retweet / comment).
+Then **check status** (`list_plans` to enumerate, `get_plan` for one) any time. The same workflow covers `create_follow_plan` (add followers) and `create_engagement_plan` (like / retweet / comment).
 
 ```
 You:    Add 200 crypto English-speaking followers for @laura
@@ -128,7 +128,8 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 | `get_balance` | read | `balance:read` | points / wallet / package |
 | `list_orders` | read | `orders:read` | recharge orders (keyset paging) |
 | `get_order` | read | `orders:read` | one order |
-| `get_plan_status` | read | `orders:read` | a plan's progress |
+| `list_plans` | read | `orders:read` | the caller's plans (keyset paging) |
+| `get_plan` | read | `orders:read` | one plan incl. its progress |
 | `create_follow_plan` | **write** | `plans:write` | add followers to a user |
 | `create_engagement_plan` | **write** | `plans:write` | like / retweet / comment on a tweet |
 
