@@ -28,7 +28,7 @@ That's it. Read on for Codex, the standalone harness, and how the safety gate wo
 
 ## How it works
 
-You speak in plain language; the agent does **not** fire off a destructive write blindly. The `spreadx-agent` Skill (and, for clients without skills, the MCP tools' own descriptions) enforce a **two-step protocol**: every write is first run as a **dry-run preview** (pool size, how many accounts would be selected, shortfall, ETA), shown to you, and only executed after you approve. Reads (balance, orders, plan status) run directly.
+You speak in plain language; the agent does **not** fire off a destructive write blindly. The `spreadx-agent` Skill (and, for clients without skills, the MCP tools' own descriptions) enforce a **two-step protocol**: every write is first run as a **dry-run preview** (pool size, how many accounts would be selected, shortfall, ETA), shown to you, and only executed after you approve. Reads (balance, orders, plans) run directly.
 
 The protocol lives in the tools, so **Codex obeys it with no Skill at all**. The Claude Skill is pure phrasing on top. And in the standalone harness, a deterministic `canUseTool` gate — not the model — is the final authority on whether a real write runs.
 
@@ -141,7 +141,7 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 - `.mcp.json` — project-mode MCP mount (for cloning this repo directly)
 - `docs/codex-setup.md` — Codex setup
 - `src/auth/` — the OAuth client: `matrix login` (discovery + PKCE with a fixed pre-registered client id), refresh-token store (macOS Keychain / 0600 file), and `resolveAccessToken` (refresh-on-run)
-- `src/core/tools.ts` — the tool registry (single source of truth for the 6 tools; gate + harness derive from it)
+- `src/core/tools.ts` — the tool registry (single source of truth for the 7 tools; gate + harness derive from it)
 - `src/core/writeGate.ts` — the deterministic `canUseTool` safety gate (fail-safe: unknown spreadx tools require approval, non-spreadx tools are denied)
 - `src/harness/{client,cli}.ts` — the Agent SDK harness + `matrix` CLI
 - `src/mock/` — in-process dev mock (balance + follow), so the harness runs offline
