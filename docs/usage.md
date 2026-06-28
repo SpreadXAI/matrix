@@ -244,3 +244,4 @@ When `spreadx-platform` deploys `mcp.spreadx.ai`:
 - [`docs/design/spreadx-matrix.md`](design/spreadx-matrix.md) — design spec
 - [`docs/codex-setup.md`](codex-setup.md) — Codex setup
 - `spreadx-platform` — the MCP server, OAuth AS, and tool contracts
+- [`src/core/spreadx-tools.json`](../src/core/spreadx-tools.json) — hand-synced snapshot of the spreadx-platform tool surface (`packages/services/mcp-user/tools.json`; until that ships, the 8-name target pinned by the platform completion design — last synced against platform `e17877a`). The CI guardrail (`src/core/tools.guardrail.test.ts`) asserts the matrix registry is a subset of it. Refresh by copy when adopting a newly shipped server tool.
