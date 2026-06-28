@@ -46,7 +46,7 @@ This repo is the **consumer side** of SpreadX's "agent acts on behalf of the use
 
 ### 1. Editor path (config + Skill)
 - `.mcp.json` (Claude Code): `{ spreadx: { type: "http", url: "https://mcp.spreadx.ai/" } }`.
-  **OAuth is run by Claude Code itself** (the server's 401 + `WWW-Authenticate resource_metadata` triggers DCR + browser authorization); **no token in the config.**
+  **OAuth is run by Claude Code itself** (the server's 401 + `WWW-Authenticate resource_metadata` triggers PKCE + browser authorization); **no token in the config.**
 - `skills/spreadx-agent/SKILL.md`: superpowers format — balance/orders/follow/like phrasing + the two-step protocol + shortfall bands. **Pure UX, not functionally required.**
 - `docs/codex-setup.md`: the Codex `config.toml` snippet + `codex mcp login`.
   **Codex's write protection = the server-side guard + Codex's own confirm UI; it does not pass through matrix's canUseTool gate** (that gate lives only in the harness).
@@ -77,7 +77,7 @@ MCP structured tool output (spec 2025-06-18, STABLE) is the recommended way to r
 
 | Path | How the token is obtained | Notes |
 |---|---|---|
-| Claude Code (`.mcp.json`) | client-managed OAuth (DCR + PKCE + browser) | zero-config token |
+| Claude Code (`.mcp.json`) | client-managed OAuth (PKCE + browser) | zero-config token |
 | Codex (`config.toml`) | `codex mcp login spreadx` | needs a recent Codex |
 | **harness** | `matrix login` (browser Auth Code + PKCE, once) — or paste `SPREADX_ACCESS_TOKEN` for a one-off | unattended-capable |
 

@@ -84,7 +84,7 @@ cp .env.example .env          # set ANTHROPIC_API_KEY; SPREADX_MCP_URL=mock for 
 node --env-file=.env --import tsx src/harness/cli.ts "Check my balance"
 ```
 
-`SPREADX_MCP_URL=mock` runs against a built-in in-process mock — no platform, no token — so you can try the flow today. For the real server, authorize once with **`matrix login`** (browser Auth Code + PKCE → a rotating refresh token stored at `~/.config/spreadx-matrix/credentials.json`, 0600); the harness then refreshes the access token before each run, so it can run unattended. See [`docs/usage.md`](docs/usage.md) for every env var and option.
+`SPREADX_MCP_URL=mock` runs against a built-in in-process mock — no platform, no token — so you can try the flow today. For the real server, authorize once with **`matrix login`** (browser Auth Code + PKCE with a fixed pre-registered client id → a rotating refresh token stored in the **macOS Keychain** by default, or a 0600 file at `~/.config/spreadx-matrix/credentials.json` elsewhere); the harness then refreshes the access token before each run, so it can run unattended. `matrix status` shows whether you're logged in; `matrix logout` forgets the stored credentials. See [`docs/usage.md`](docs/usage.md) for every env var and option.
 
 ---
 
@@ -150,14 +150,14 @@ Uninstall with `/plugin uninstall spreadx-matrix`. For the harness, `git pull &&
 
 ## Security
 
-No secrets at rest. The plugin/editor path uses client-managed OAuth (no token in any config); the harness reads `SPREADX_ACCESS_TOKEN` from env only. `.env` and `.mcp.local.json` are git-ignored — never commit a token. Revocation lives in the OAuth layer (the platform AS / dashboard); the access token's short TTL bounds any leak.
+No secrets in config. The plugin/editor path uses client-managed OAuth (no token in any config). The harness authorizes once with `matrix login` and keeps a rotating refresh token in the **macOS Keychain** (encrypted at rest) or a 0600 file — never in `.env`; `SPREADX_ACCESS_TOKEN` remains only as an optional one-off env override. `.env` and `.mcp.local.json` are git-ignored — never commit a token. Revocation lives in the OAuth layer (the platform AS / dashboard); the access token's short TTL bounds any leak, and refresh-token rotation invalidates a stolen refresh token on next use.
 
 ---
 
 ## Status & roadmap
 
-- ✅ Plugin, Skill, editor config, harness, deterministic write gate, in-process mock — implemented and tested (23 tests).
-- ⏳ **Real server** — the MCP URL `mcp.spreadx.ai` is reachable once `spreadx-platform` ships **Phase B.4** (FastMCP streamable-http) and deploys. Until then use `SPREADX_MCP_URL=mock`; cutover is one env var.
+- ✅ Plugin, Skill, editor config, harness, OAuth client (`matrix login`/`status`/`logout` with fixed client id + Keychain/0600 token store), deterministic write gate, in-process mock — implemented and tested (59 tests).
+- ✅ **Real server** — `mcp.spreadx.ai` is **live**. The MCP transport is deployed (RFC 9728 protected-resource metadata served; unauthenticated calls return 401) and the full OAuth discovery chain is verified against production: AS `https://platform-api.spreadx.ai/` advertises `authorization_endpoint` `https://app.spreadx.ai/oauth/authorize`, S256 PKCE, `token_endpoint_auth_methods=none`, and scopes `balance:read orders:read plans:write offline_access` — the seeded `spreadx-matrix` client (no DCR). Point the harness at it with `SPREADX_MCP_URL=https://mcp.spreadx.ai/` and authorize once with `matrix login`; the `mock` path remains for offline dev.
 - ⏳ **Live model smoke** — the LLM-driven tool loop needs an `ANTHROPIC_API_KEY` (run it against the mock). The gate, config, and mock logic are already proven by tests + no-key runtime smokes.
 
 ## See also
