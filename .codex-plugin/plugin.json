@@ -1,7 +1,7 @@
 {
   "name": "spreadx-matrix",
-  "version": "0.1.0",
-  "description": "Operate a SpreadX account from Codex — balance, orders, follow, and like/retweet/comment plans — via the spreadx MCP server, with a dry-run→confirm safety protocol.",
+  "version": "0.2.0",
+  "description": "Operate a SpreadX account from Codex — balance, orders, follow & like/retweet/comment plans, and tracking your plans — via the spreadx MCP server, with a dry-run→confirm safety protocol.",
   "author": {
     "name": "SpreadX",
     "email": "oss@spreadx.ai",
@@ -20,8 +20,8 @@
   "mcpServers": "./.codex-plugin/mcp.json",
   "interface": {
     "displayName": "SpreadX Matrix",
-    "shortDescription": "Operate a SpreadX account: balance, orders, follow, like",
-    "longDescription": "Check your SpreadX balance and orders, and create follow / like-retweet-comment growth plans, through the spreadx MCP server. Every write is previewed (dry-run) and confirmed before it runs.",
+    "shortDescription": "Operate a SpreadX account: balance, orders, follow, like, plans",
+    "longDescription": "Check your SpreadX balance and orders, create follow / like-retweet-comment growth plans, and list/track your plans' progress, through the spreadx MCP server. Every write is previewed (dry-run) and confirmed before it runs.",
     "developerName": "SpreadX",
     "category": "Productivity",
     "capabilities": [
