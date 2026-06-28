@@ -1,6 +1,6 @@
 ---
 name: spreadx-agent
-description: Operates a user's SpreadX account via the spreadx MCP tools — balance, orders, add followers, like/retweet/comment. Use when the user asks to check balance or points, view orders, add followers to @x, like a tweet, or check a plan's progress.
+description: Operates a user's SpreadX account via the spreadx MCP tools — balance, orders, plans, add followers, like/retweet/comment. Use when the user asks to check balance or points, view orders, list their plans or campaigns, add followers to @x, like a tweet, or check how a plan is progressing.
 ---
 
 # SpreadX Agent skill
@@ -43,6 +43,9 @@ Compute `pct = shortfall / requested × 100` for each operation, then act on the
 - **Balance** — call `get_balance`; report `points.balance`, `wallet_balance`, `package`.
 - **Add followers** (e.g. "add 200 crypto English followers to @laura") — `create_follow_plan({ username: "laura", count: 200, tags: ["crypto","en"], confirm: false })` → present the preview → on approval, repeat the call with `confirm: true` → report `{ plan_id, status }`.
 - **Engagement** (e.g. "like this tweet 50 times") — `create_engagement_plan({ tweet_url: "<url>", operations: [{ type: "like", count: 50 }], confirm: false })` → preview → approval → `confirm: true`.
+- **Check plans** (e.g. "how are my campaigns doing", "list my plans") — `list_plans({ status_group?, target?, limit? })` returns a newest-first page (`plans[]` + `next_cursor`). Every row already carries progress (`total_items` / `completed_items` / `failed_items`), so summarize straight from the list — no per-plan fan-out. For one plan's detail, `get_plan({ plan_id })`. This is also the follow-up after a `create_*_plan` returns a `plan_id` (the "check status any time" loop).
+  - `status_group` is one of `open | done | failed | cancelled | partial` (the server expands these, e.g. `open` → pending/executing/paused). Pass only these tokens; do not invent an `active`/`completed` taxonomy.
+  - `target` filters by a Twitter handle. `next_cursor` is opaque — pass it back verbatim to page; never build or parse it.
 
 ## Errors
 
