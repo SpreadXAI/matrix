@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { login, SPREADX_CLIENT_ID } from "./login.js";
+import { login, loginTimeoutMs, SPREADX_CLIENT_ID } from "./login.js";
 import type { FetchFn } from "./oauth.js";
 import type { StoredCreds, TokenStore } from "./tokenStore.js";
 
@@ -110,6 +110,9 @@ describe("login", () => {
     await expect(runLogin({ access_token: "at" })).rejects.toThrow(/offline_access|refresh_token/);
   });
 
+  // Also guards the bounded-wait regression: the default loginTimeoutMs() timer is
+  // armed in runLoopbackFlow, then cleared by close() on this error callback, so
+  // the error path still rejects cleanly with the timer in place.
   it("rejects when the authorization server returns an error", async () => {
     const { done, saves } = loginWith((u) => {
       const redirectUri = u.searchParams.get("redirect_uri") ?? "";
@@ -137,5 +140,26 @@ describe("login", () => {
       void fetch(`${redirectUri}?state=${encodeURIComponent(state)}`);
     });
     await expect(done).rejects.toThrow(/no code/);
+  });
+
+  it("rejects with a timeout when the browser never returns to the loopback", async () => {
+    const { fn } = fakeFetch(asRoutes(OK_TOKEN));
+    const { store } = fakeStore();
+    await expect(
+      login(MCP_URL, { store, fetchFn: fn, openBrowser: () => {}, timeoutMs: 20 }),
+    ).rejects.toThrow(/timed out/);
+  });
+});
+
+describe("loginTimeoutMs", () => {
+  it("parses a positive value", () => {
+    expect(loginTimeoutMs({ MATRIX_LOGIN_TIMEOUT_MS: "50" } as NodeJS.ProcessEnv)).toBe(50);
+  });
+
+  it("falls back to 300000 for invalid, zero, negative, or unset", () => {
+    expect(loginTimeoutMs({ MATRIX_LOGIN_TIMEOUT_MS: "abc" } as NodeJS.ProcessEnv)).toBe(300_000);
+    expect(loginTimeoutMs({ MATRIX_LOGIN_TIMEOUT_MS: "-5" } as NodeJS.ProcessEnv)).toBe(300_000);
+    expect(loginTimeoutMs({ MATRIX_LOGIN_TIMEOUT_MS: "0" } as NodeJS.ProcessEnv)).toBe(300_000);
+    expect(loginTimeoutMs({} as NodeJS.ProcessEnv)).toBe(300_000);
   });
 });
