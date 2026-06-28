@@ -142,6 +142,7 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 - `docs/codex-setup.md` — Codex setup
 - `src/auth/` — the OAuth client: `matrix login` (discovery + PKCE with a fixed pre-registered client id), refresh-token store (macOS Keychain / 0600 file), and `resolveAccessToken` (refresh-on-run)
 - `src/core/tools.ts` — the tool registry (single source of truth for the 7 tools; gate + harness derive from it)
+- `src/core/spreadx-tools.json` — vendored snapshot of the platform tool surface; the CI guardrail (`src/core/tools.guardrail.test.ts`) asserts the registry never names a tool the server doesn't expose (`registry ⊆ manifest`)
 - `src/core/writeGate.ts` — the deterministic `canUseTool` safety gate (fail-safe: unknown spreadx tools require approval, non-spreadx tools are denied)
 - `src/harness/{client,cli}.ts` — the Agent SDK harness + `matrix` CLI
 - `src/mock/` — in-process dev mock (balance + follow), so the harness runs offline
@@ -168,7 +169,7 @@ No secrets in config. The plugin/editor path uses client-managed OAuth (no token
 
 ## Status & roadmap
 
-- ✅ **Client, end to end** — plugin, Skill, editor config, harness, OAuth client (`matrix login` / `status` / `logout` with a fixed pre-registered client id and a Keychain/0600 token store), deterministic write gate, and in-process mock. Implemented and covered by **62 tests**.
+- ✅ **Client, end to end** — plugin, Skill, editor config, harness, OAuth client (`matrix login` / `status` / `logout` with a fixed pre-registered client id and a Keychain/0600 token store), deterministic write gate, and in-process mock. Implemented and covered by **64 tests**.
 - ✅ **Real server live** — `mcp.spreadx.ai` is deployed and serving RFC 9728 protected-resource metadata (unauthenticated calls return 401). The full OAuth discovery chain is verified against production: AS `https://platform-api.spreadx.ai/` advertises authorize endpoint `https://app.spreadx.ai/oauth/authorize`, S256 PKCE, `token_endpoint_auth_method=none`, and scopes `balance:read orders:read plans:write offline_access` for the seeded `spreadx-matrix` client (no dynamic registration). Point the harness at it with `SPREADX_MCP_URL=https://mcp.spreadx.ai/` and run `matrix login`; the `mock` path stays for offline dev.
 - ⏳ **Live model run** — the model-driven tool loop hasn't yet been exercised end to end against a live model (it needs an `ANTHROPIC_API_KEY`). Everything beneath it — the gate, config, tool registry, and mock — is already proven by the test suite and by no-key runtime smokes.
 

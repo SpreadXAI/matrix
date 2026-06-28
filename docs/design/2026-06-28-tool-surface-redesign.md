@@ -122,6 +122,26 @@ Only **one** code file changes; the rest is docs/Skill.
   `list_plans`/`get_plan` get registry + gate-routing coverage, not a mock — and
   since the server now ships both, that E2E path is **real today**, not pending.
 
+## Drift guardrail (shipped 2026-06-28)
+
+The contract above is **server-owned**; this repo only mirrors it. To keep the mirror
+from drifting into a *phantom* (a tool the client names but the server doesn't expose),
+CI runs a pure subset check — no network, no codegen, no schema framework:
+
+- **`src/core/spreadx-tools.json`** — a vendored snapshot of the platform tool surface
+  (8 sorted bare names; provenance + last-synced platform commit live in `docs/usage.md`).
+- **`src/core/tools.guardrail.test.ts`** — asserts `registry ⊆ manifest` (the one that
+  matters at runtime — gate, `allowedTools`, and mock all derive from `TOOLS`) and
+  `skill ## Tools table ⊆ registry`, giving `skill ⊆ registry ⊆ manifest` transitively.
+  It runs inside `pnpm test` under the repo's first CI workflow (`.github/workflows/ci.yml`).
+
+**Adding a tool:** add it to `TOOLS` in `tools.ts` (the matrix-internal source of truth),
+then ensure the name is in `spreadx-tools.json` (refresh by copying the platform
+`tools.json`). The subset is **one-directional-safe** — matrix may lag the server, but
+never reference a name it lacks. `whoami` stays in the manifest but **not** in `TOOLS`
+(it's a platform identity tool, not an agent action), so `registry (7) ⊆ manifest (8)`
+holds by design — do not add it to balance the counts.
+
 ## Out of scope
 
 `outputSchema` rigor pass (this redesign is surface, not schema); scope-granularity
