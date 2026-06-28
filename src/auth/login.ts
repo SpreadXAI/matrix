@@ -43,10 +43,23 @@ interface LoopbackResult {
   pkce: Pkce;
 }
 
-function runLoopbackFlow(meta: AsMetadata, mcpUrl: string, openBrowser: (url: string) => void): Promise<LoopbackResult> {
+function runLoopbackFlow(
+  meta: AsMetadata,
+  mcpUrl: string,
+  openBrowser: (url: string) => void,
+  timeoutMs: number,
+): Promise<LoopbackResult> {
   return new Promise<LoopbackResult>((resolve, reject) => {
     const server = createServer();
-    server.on("error", reject);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const close = (): void => {
+      if (timer) clearTimeout(timer);
+      server.close();
+    };
+    server.on("error", (e) => {
+      close();
+      reject(e);
+    });
     server.listen(0, "127.0.0.1", () => {
       void (async () => {
         try {
@@ -73,7 +86,7 @@ function runLoopbackFlow(meta: AsMetadata, mcpUrl: string, openBrowser: (url: st
             res.writeHead(200, { "content-type": "text/html" }).end(
               "<html><body><h3>SpreadX login complete</h3>You can close this tab and return to the terminal.</body></html>",
             );
-            server.close();
+            close();
             const err = u.searchParams.get("error");
             if (err) return reject(new Error(`authorization error: ${err}`));
             if (u.searchParams.get("state") !== state) return reject(new Error("state mismatch (possible CSRF) — aborting"));
@@ -85,8 +98,17 @@ function runLoopbackFlow(meta: AsMetadata, mcpUrl: string, openBrowser: (url: st
           // eslint-disable-next-line no-console
           console.error(`Opening your browser to authorize SpreadX.\nIf it doesn't open, visit:\n${authUrl}\n`);
           openBrowser(authUrl);
+          timer = setTimeout(() => {
+            close();
+            reject(
+              new Error(
+                `authorization timed out after ${Math.round(timeoutMs / 1000)}s — the consent page may have failed to load or errored. Check the browser tab, then run \`matrix login\` again.`,
+              ),
+            );
+          }, timeoutMs);
+          timer.unref();
         } catch (e) {
-          server.close();
+          close();
           reject(e);
         }
       })();
@@ -101,12 +123,13 @@ function runLoopbackFlow(meta: AsMetadata, mcpUrl: string, openBrowser: (url: st
  */
 export async function login(
   mcpUrl: string,
-  deps: { store?: TokenStore; fetchFn?: FetchFn; openBrowser?: (url: string) => void } = {},
+  deps: { store?: TokenStore; fetchFn?: FetchFn; openBrowser?: (url: string) => void; timeoutMs?: number } = {},
 ): Promise<void> {
   const f = deps.fetchFn ?? fetch;
   const store = deps.store ?? defaultTokenStore();
+  const timeoutMs = deps.timeoutMs ?? loginTimeoutMs();
   const meta = await discover(mcpUrl, f);
-  const { code, redirectUri, pkce } = await runLoopbackFlow(meta, mcpUrl, deps.openBrowser ?? openDefault);
+  const { code, redirectUri, pkce } = await runLoopbackFlow(meta, mcpUrl, deps.openBrowser ?? openDefault, timeoutMs);
   const tok = await exchangeCode(
     { tokenEndpoint: meta.tokenEndpoint, clientId: SPREADX_CLIENT_ID, code, verifier: pkce.verifier, redirectUri, resource: mcpUrl },
     f,
