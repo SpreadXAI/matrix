@@ -40,7 +40,7 @@ The capability is two things: a **Skill** (phrasing/UX) and the **`spreadx` MCP 
 
 | Client | Install | Authorize | Skill | Write gate |
 |---|---|---|---|---|
-| **Claude Code** | `/plugin marketplace add SpreadXAI/spreadx-marketplace` → `/plugin install spreadx-matrix@spreadx-marketplace` | browser OAuth (once) | ✅ auto-loads | editor approval UI + server guard |
+| **Claude Code** | `/plugin marketplace add SpreadXAI/spreadx-marketplace` → `/plugin install spreadx-matrix@spreadx-marketplace` | browser OAuth (once), pre-registered client id | ✅ auto-loads | editor approval UI + server guard |
 | **Codex** | `codex plugin marketplace add SpreadXAI/matrix` → `/plugins` → Install | `codex mcp login spreadx` | ✅ native | Codex confirm UI + server guard |
 | **Standalone harness** | `git clone` + `pnpm install` | `matrix login` (browser, once) — or `SPREADX_ACCESS_TOKEN` env / `mock` | ✅ via SDK | deterministic `canUseTool` gate (approval + caps) + server guard |
 
@@ -51,9 +51,11 @@ The capability is two things: a **Skill** (phrasing/UX) and the **`spreadx` MCP 
 /plugin install spreadx-matrix@spreadx-marketplace
 ```
 
-The plugin ([`.claude-plugin/`](.claude-plugin/)) bundles the `spreadx-agent` Skill and registers the remote MCP server. First tool use triggers the one-time browser OAuth (login via Privy, approve scopes). No tokens to paste, nothing at rest.
+The plugin ([`.claude-plugin/`](.claude-plugin/)) bundles the `spreadx-agent` Skill and registers the remote MCP server with the **pre-registered client id `spreadx-matrix`**. First tool use triggers the one-time browser OAuth (login via Privy, approve scopes). No tokens to paste, nothing at rest.
 
-> Prefer not to use the plugin? Just register the server — `claude mcp add --transport http spreadx https://mcp.spreadx.ai/` — and optionally copy `skills/spreadx-agent/` into your project's `.claude/skills/`.
+> **Why the pre-registered client id?** The `spreadx` server does **not** support OAuth Dynamic Client Registration (DCR). A bare `claude mcp add` defaults to DCR and fails with `Incompatible auth server: does not support dynamic client registration`. Pinning `clientId: spreadx-matrix` in the MCP config (the plugin and [`.mcp.json`](.mcp.json) both ship it) is what lets the standard Auth Code + PKCE flow proceed.
+
+> Prefer not to use the plugin? Register the server with the client id — `claude mcp add --transport http --client-id spreadx-matrix spreadx https://mcp.spreadx.ai/` — and optionally copy `skills/spreadx-agent/` into your project's `.claude/skills/`.
 
 ### Codex
 
@@ -64,14 +66,23 @@ codex plugin marketplace add SpreadXAI/matrix
 # then open /plugins, search "SpreadX", Install
 ```
 
-Or add the server manually to `~/.codex/config.toml`:
+Or add the server manually — pin the same pre-registered client id (Codex uses snake_case `client_id`, the plugin ships it for you):
+
+```bash
+codex mcp add --url https://mcp.spreadx.ai/ --oauth-client-id spreadx-matrix spreadx
+```
+
+…which writes this to `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.spreadx]
 url = "https://mcp.spreadx.ai/"
+
+[mcp_servers.spreadx.oauth]
+client_id = "spreadx-matrix"
 ```
 
-Either way, authorize once with `codex mcp login spreadx`. The tools' own descriptions carry the dry-run/confirm protocol, so it holds even without the skill; Codex writes are gated by the **server-side** guard plus Codex's own confirm UI. Full notes: [`docs/codex-setup.md`](docs/codex-setup.md).
+The `oauth.client_id` is required for the same reason as Claude Code: the `spreadx` server doesn't do Dynamic Client Registration, so a bare `url`-only entry fails to authorize. Then authorize once with `codex mcp login spreadx`. The tools' own descriptions carry the dry-run/confirm protocol, so it holds even without the skill; Codex writes are gated by the **server-side** guard plus Codex's own confirm UI. Full notes: [`docs/codex-setup.md`](docs/codex-setup.md).
 
 ### Standalone harness (scripts / headless)
 

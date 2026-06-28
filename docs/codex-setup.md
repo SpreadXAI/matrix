@@ -9,7 +9,9 @@ is harness-only).
 ## Plugin (recommended)
 
 The repo ships a Codex plugin ([`.codex-plugin/`](../.codex-plugin/)) that bundles the
-`spreadx-agent` skill and registers the `spreadx` MCP server.
+`spreadx-agent` skill and registers the `spreadx` MCP server with the **pre-registered
+client id `spreadx-matrix`** (the `spreadx` server doesn't support OAuth Dynamic Client
+Registration, so a `url`-only entry can't authorize).
 
 ```bash
 codex plugin marketplace add SpreadXAI/matrix      # add this repo as a plugin source
@@ -29,17 +31,32 @@ First tool use triggers the one-time OAuth: `codex mcp login spreadx`.
 
 ## Manual config (no plugin)
 
-Add the server directly to `~/.codex/config.toml`:
+Add the server with the CLI (writes the entry for you):
+
+```bash
+codex mcp add --url https://mcp.spreadx.ai/ --oauth-client-id spreadx-matrix spreadx
+```
+
+…or edit `~/.codex/config.toml` directly:
 
 ```toml
 [mcp_servers.spreadx]
 url = "https://mcp.spreadx.ai/"
+
+[mcp_servers.spreadx.oauth]
+client_id = "spreadx-matrix"
 ```
+
+The `[mcp_servers.spreadx.oauth].client_id` is **required** — without it Codex falls back to
+Dynamic Client Registration, which the `spreadx` server rejects (`does not support dynamic
+client registration`). Note Codex uses snake_case `client_id` here, whereas Claude Code's
+`.mcp.json` uses camelCase `clientId` — same value, different key per client.
 
 Authorize once: `codex mcp login spreadx`.
 
-> Requires a current Codex CLI with remote streamable-http MCP + OAuth. Older builds
-> (stdio-only) should use this repo's harness (`pnpm harness "..."`) instead.
+> Requires a current Codex CLI with remote streamable-http MCP + OAuth (verified on
+> `codex-cli 0.142.3`, which exposes `--oauth-client-id`). Older builds (stdio-only)
+> should use this repo's harness (`pnpm harness "..."`) instead.
 
 ## What you can ask
 

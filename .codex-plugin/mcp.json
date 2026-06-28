@@ -1,7 +1,10 @@
 {
   "mcp_servers": {
     "spreadx": {
-      "url": "https://mcp.spreadx.ai/"
+      "url": "https://mcp.spreadx.ai/",
+      "oauth": {
+        "client_id": "spreadx-matrix"
+      }
     }
   }
 }
