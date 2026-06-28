@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { login, SPREADX_CLIENT_ID } from "./login.js";
+import { login, loginTimeoutMs, SPREADX_CLIENT_ID } from "./login.js";
 import type { FetchFn } from "./oauth.js";
 import type { StoredCreds, TokenStore } from "./tokenStore.js";
 
@@ -137,5 +137,18 @@ describe("login", () => {
       void fetch(`${redirectUri}?state=${encodeURIComponent(state)}`);
     });
     await expect(done).rejects.toThrow(/no code/);
+  });
+});
+
+describe("loginTimeoutMs", () => {
+  it("parses a positive value", () => {
+    expect(loginTimeoutMs({ MATRIX_LOGIN_TIMEOUT_MS: "50" } as NodeJS.ProcessEnv)).toBe(50);
+  });
+
+  it("falls back to 300000 for invalid, zero, negative, or unset", () => {
+    expect(loginTimeoutMs({ MATRIX_LOGIN_TIMEOUT_MS: "abc" } as NodeJS.ProcessEnv)).toBe(300_000);
+    expect(loginTimeoutMs({ MATRIX_LOGIN_TIMEOUT_MS: "-5" } as NodeJS.ProcessEnv)).toBe(300_000);
+    expect(loginTimeoutMs({ MATRIX_LOGIN_TIMEOUT_MS: "0" } as NodeJS.ProcessEnv)).toBe(300_000);
+    expect(loginTimeoutMs({} as NodeJS.ProcessEnv)).toBe(300_000);
   });
 });
