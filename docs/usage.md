@@ -108,6 +108,7 @@ Edit `.env`:
 | `MATRIX_MAX_FOLLOW` | `1000` | Hard cap the gate enforces on a real follow write. |
 | `MATRIX_MAX_ENGAGEMENT` | `500` | Hard cap on a real engagement write (summed over ops). |
 | `MATRIX_TOKEN_STORE` | auto | Where `matrix login` keeps the refresh token: `keychain` (default on macOS) or `file` (0600, default elsewhere). |
+| `MATRIX_LOGIN_TIMEOUT_MS` | `300000` | Max time (ms) `matrix login` waits for the browser callback before failing with a clear error. |
 
 Run (no build needed — `tsx` runs the TypeScript directly):
 
@@ -220,7 +221,7 @@ The model cannot route around this — write tools are excluded from the SDK's `
 When `spreadx-platform` deploys `mcp.spreadx.ai`:
 
 - **Editor:** nothing to change — `.mcp.json` already points there; first use triggers OAuth.
-- **Harness:** set `SPREADX_MCP_URL=https://mcp.spreadx.ai/` and `SPREADX_ACCESS_TOKEN=<token>`. No code change.
+- **Harness:** set `SPREADX_MCP_URL=https://mcp.spreadx.ai/`, then run `matrix login` once (browser OAuth → rotating refresh token in the Keychain/0600 file; the harness refreshes unattended after that). `SPREADX_ACCESS_TOKEN` remains an optional one-off override. No code change.
 
 ---
 
@@ -230,7 +231,7 @@ When `spreadx-platform` deploys `mcp.spreadx.ai`:
 |---|---|
 | `SPREADX_ACCESS_TOKEN is required when SPREADX_MCP_URL is not 'mock'` | Set a token, or use `SPREADX_MCP_URL=mock` for offline dev. |
 | `agent run did not succeed: …` | The model run ended in error (`error_max_turns`, auth, network). The subtype tells you which; check `ANTHROPIC_API_KEY` and the MCP URL. |
-| `401` / re-authorize | The OAuth session lapsed. Editor: re-run the browser flow. Harness: paste a fresh `SPREADX_ACCESS_TOKEN`. |
+| `401` / re-authorize | The OAuth session lapsed. Editor: re-run the browser flow. Harness: run `matrix login` again (or, for a one-off, set a fresh `SPREADX_ACCESS_TOKEN`). |
 | `403` | Missing scope (`plans:write` for writes) or someone else's plan. |
 | Tool-not-found against the mock | The mock only implements `get_balance` + `create_follow_plan`. Use the real server (or staging) for the rest. |
 | `usage: matrix "<natural language instruction>"` | You ran `matrix` with no prompt — pass one quoted argument. |

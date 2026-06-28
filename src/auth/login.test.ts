@@ -138,6 +138,28 @@ describe("login", () => {
     });
     await expect(done).rejects.toThrow(/no code/);
   });
+
+  it("rejects with a timeout when the browser never returns to the loopback", async () => {
+    const { fn } = fakeFetch(asRoutes(OK_TOKEN));
+    const { store } = fakeStore();
+    await expect(
+      login(MCP_URL, { store, fetchFn: fn, openBrowser: () => {}, timeoutMs: 20 }),
+    ).rejects.toThrow(/timed out/);
+  });
+
+  it("surfaces an authorization error from the callback (timer cleared)", async () => {
+    const deny = (url: string): void => {
+      const u = new URL(url);
+      const redirectUri = u.searchParams.get("redirect_uri") ?? "";
+      const state = u.searchParams.get("state") ?? "";
+      void fetch(`${redirectUri}?error=access_denied&state=${encodeURIComponent(state)}`);
+    };
+    const { fn } = fakeFetch(asRoutes(OK_TOKEN));
+    const { store } = fakeStore();
+    await expect(
+      login(MCP_URL, { store, fetchFn: fn, openBrowser: deny }),
+    ).rejects.toThrow(/authorization error: access_denied/);
+  });
 });
 
 describe("loginTimeoutMs", () => {
