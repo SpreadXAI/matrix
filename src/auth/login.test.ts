@@ -110,6 +110,9 @@ describe("login", () => {
     await expect(runLogin({ access_token: "at" })).rejects.toThrow(/offline_access|refresh_token/);
   });
 
+  // Also guards the bounded-wait regression: the default loginTimeoutMs() timer is
+  // armed in runLoopbackFlow, then cleared by close() on this error callback, so
+  // the error path still rejects cleanly with the timer in place.
   it("rejects when the authorization server returns an error", async () => {
     const { done, saves } = loginWith((u) => {
       const redirectUri = u.searchParams.get("redirect_uri") ?? "";
@@ -145,20 +148,6 @@ describe("login", () => {
     await expect(
       login(MCP_URL, { store, fetchFn: fn, openBrowser: () => {}, timeoutMs: 20 }),
     ).rejects.toThrow(/timed out/);
-  });
-
-  it("surfaces an authorization error from the callback (timer cleared)", async () => {
-    const deny = (url: string): void => {
-      const u = new URL(url);
-      const redirectUri = u.searchParams.get("redirect_uri") ?? "";
-      const state = u.searchParams.get("state") ?? "";
-      void fetch(`${redirectUri}?error=access_denied&state=${encodeURIComponent(state)}`);
-    };
-    const { fn } = fakeFetch(asRoutes(OK_TOKEN));
-    const { store } = fakeStore();
-    await expect(
-      login(MCP_URL, { store, fetchFn: fn, openBrowser: deny }),
-    ).rejects.toThrow(/authorization error: access_denied/);
   });
 });
 
