@@ -20,6 +20,17 @@ const SCOPE = "balance:read orders:read plans:write offline_access";
  */
 export const SPREADX_CLIENT_ID = process.env.SPREADX_CLIENT_ID ?? "spreadx-matrix";
 
+/**
+ * How long `matrix login` waits for the browser to hit the loopback callback
+ * before failing. Default 300s (generous for a human login); override with
+ * MATRIX_LOGIN_TIMEOUT_MS. Invalid/zero/negative falls back to the default so
+ * the wait is never unbounded.
+ */
+export function loginTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
+  const n = Number(env.MATRIX_LOGIN_TIMEOUT_MS);
+  return Number.isFinite(n) && n > 0 ? n : 300_000;
+}
+
 function openDefault(url: string): void {
   const cmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "cmd" : "xdg-open";
   const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
