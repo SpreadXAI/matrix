@@ -11,7 +11,7 @@
 **Claude Code** — install the plugin, then ask:
 
 ```
-/plugin marketplace add SpreadXAI/spreadx-marketplace
+/plugin marketplace add SpreadXAI/matrix
 /plugin install spreadx-matrix@spreadx-marketplace
 ```
 
@@ -40,14 +40,14 @@ The capability is two things: a **Skill** (phrasing/UX) and the **`spreadx` MCP 
 
 | Client | Install | Authorize | Skill | Write gate |
 |---|---|---|---|---|
-| **Claude Code** | `/plugin marketplace add SpreadXAI/spreadx-marketplace` → `/plugin install spreadx-matrix@spreadx-marketplace` | browser OAuth (once), pre-registered client id | ✅ auto-loads | editor approval UI + server guard |
+| **Claude Code** | `/plugin marketplace add SpreadXAI/matrix` → `/plugin install spreadx-matrix@spreadx-marketplace` | browser OAuth (once), pre-registered client id | ✅ auto-loads | editor approval UI + server guard |
 | **Codex** | `codex plugin marketplace add SpreadXAI/matrix` → `/plugins` → Install | `codex mcp login spreadx` | ✅ native | Codex confirm UI + server guard |
 | **Standalone harness** | `git clone` + `pnpm install` | `matrix login` (browser, once) — or `SPREADX_ACCESS_TOKEN` env / `mock` | ✅ via SDK | deterministic `canUseTool` gate (approval + caps) + server guard |
 
 ### Claude Code (plugin — installs both)
 
 ```
-/plugin marketplace add SpreadXAI/spreadx-marketplace
+/plugin marketplace add SpreadXAI/matrix
 /plugin install spreadx-matrix@spreadx-marketplace
 ```
 

@@ -31,7 +31,7 @@ Both talk to the same MCP server and obey the same write protocol.
 Install the plugin; it registers the `spreadx` MCP server **and** the `spreadx-agent` Skill in one step:
 
 ```
-/plugin marketplace add SpreadXAI/spreadx-marketplace
+/plugin marketplace add SpreadXAI/matrix
 /plugin install spreadx-matrix@spreadx-marketplace
 ```
 
@@ -43,14 +43,13 @@ Update / remove later with:
 /plugin uninstall spreadx-matrix
 ```
 
-> **Where the marketplace lives.** `add SpreadXAI/spreadx-marketplace` fetches the
-> `SpreadXAI/spreadx-marketplace` repo, whose `marketplace.json` lists the `spreadx-matrix`
-> plugin (sourced from `SpreadXAI/matrix`). If you haven't published that marketplace repo
-> yet, you can install straight from the plugin repo instead — the install name is the same:
-> ```
-> /plugin marketplace add SpreadXAI/matrix
-> /plugin install spreadx-matrix@spreadx-marketplace
-> ```
+> **Name vs source.** You **add** by repo source — `SpreadXAI/matrix` — but **install /
+> update / uninstall** by the names declared inside the manifest: the plugin is
+> `spreadx-matrix` and the marketplace it belongs to is `spreadx-marketplace` (both set in
+> [`.claude-plugin/marketplace.json`](../.claude-plugin/marketplace.json)). That's why the
+> repo path and the `@spreadx-marketplace` suffix differ — `add` needs a place to fetch
+> from, the rest reference the local name. There is no central registry, so
+> `add spreadx-marketplace` (a bare name) won't resolve.
 
 ### Claude Code — without the plugin
 
