@@ -9,7 +9,6 @@ export interface AsMetadata {
   issuer: string;
   authorizationEndpoint: string;
   tokenEndpoint: string;
-  registrationEndpoint?: string;
 }
 
 export interface TokenResponse {
@@ -41,7 +40,6 @@ export async function discover(mcpUrl: string, f: FetchFn): Promise<AsMetadata> 
     issuer?: string;
     authorization_endpoint?: string;
     token_endpoint?: string;
-    registration_endpoint?: string;
     code_challenge_methods_supported?: string[];
   };
   if (!m.code_challenge_methods_supported?.includes("S256")) {
@@ -54,27 +52,7 @@ export async function discover(mcpUrl: string, f: FetchFn): Promise<AsMetadata> 
     issuer: m.issuer ?? issuer,
     authorizationEndpoint: m.authorization_endpoint,
     tokenEndpoint: m.token_endpoint,
-    registrationEndpoint: m.registration_endpoint,
   };
-}
-
-/** RFC 7591 Dynamic Client Registration for a public, loopback-redirect client. */
-export async function registerClient(registrationEndpoint: string, redirectUri: string, f: FetchFn): Promise<string> {
-  const res = await f(registrationEndpoint, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      client_name: "spreadx-matrix CLI",
-      redirect_uris: [redirectUri],
-      grant_types: ["authorization_code", "refresh_token"],
-      response_types: ["code"],
-      token_endpoint_auth_method: "none",
-    }),
-  });
-  if (!res.ok) throw new Error(`dynamic client registration: HTTP ${res.status}`);
-  const j = (await res.json()) as { client_id?: string };
-  if (!j.client_id) throw new Error("dynamic client registration returned no client_id");
-  return j.client_id;
 }
 
 export function buildAuthorizeUrl(p: {
