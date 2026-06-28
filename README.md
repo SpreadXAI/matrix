@@ -169,7 +169,7 @@ No secrets in config. The plugin/editor path uses client-managed OAuth (no token
 
 ## Status & roadmap
 
-- ✅ **Client, end to end** — plugin, Skill, editor config, harness, OAuth client (`matrix login` / `status` / `logout` with a fixed pre-registered client id and a Keychain/0600 token store), deterministic write gate, and in-process mock. Implemented and covered by **64 tests**.
+- ✅ **Client, end to end** — plugin, Skill, editor config, harness, OAuth client (`matrix login` / `status` / `logout` with a fixed pre-registered client id and a Keychain/0600 token store), deterministic write gate, and in-process mock. Implemented and covered by a **deterministic unit-test suite** (`pnpm test`).
 - ✅ **Real server live** — `mcp.spreadx.ai` is deployed and serving RFC 9728 protected-resource metadata (unauthenticated calls return 401). The full OAuth discovery chain is verified against production: AS `https://platform-api.spreadx.ai/` advertises authorize endpoint `https://app.spreadx.ai/oauth/authorize`, S256 PKCE, `token_endpoint_auth_method=none`, and scopes `balance:read orders:read plans:write offline_access` for the seeded `spreadx-matrix` client (no dynamic registration). Point the harness at it with `SPREADX_MCP_URL=https://mcp.spreadx.ai/` and run `matrix login`; the `mock` path stays for offline dev.
 - ⏳ **Live model run** — the model-driven tool loop hasn't yet been exercised end to end against a live model (it needs an `ANTHROPIC_API_KEY`). Everything beneath it — the gate, config, tool registry, and mock — is already proven by the test suite and by no-key runtime smokes.
 
