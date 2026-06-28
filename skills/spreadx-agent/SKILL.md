@@ -45,4 +45,4 @@ Compute `pct = shortfall / requested × 100` for each operation, then act on the
 
 ## Errors
 
-Map the MCP error to a clear, language-matched message: `401` → re-authorize (the client handles the redirect); `403` → missing scope (`plans:write` for writes) or another user's plan; `404` → not found; `422` → invalid field or insufficient pool; `429` → surface `Retry-After`.
+Map the MCP error to a clear, language-matched message: `401` → re-authorize (Claude Code / Codex run the OAuth redirect themselves; the matrix harness auto-refreshes the access token each run, so a persistent `401` means running `matrix login` again); `403` → missing scope (`plans:write` for writes) or another user's plan; `404` → not found; `422` → invalid field or insufficient pool; `429` → surface `Retry-After`.
