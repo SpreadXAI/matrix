@@ -6,6 +6,11 @@ export function defaultState(): MockState {
 
 let planSeq = 0;
 
+/** Deterministic token the preview hands back for the caller to thread into a commit.
+ *  The mock never verifies it (token validity is the real server's job) — it only
+ *  proves the preview→commit round-trip threads the same value. */
+export const MOCK_CONFIRMATION_TOKEN = "mock-confirm";
+
 // ---------------------------------------------------------------------------
 // Typed output contracts (the TS equivalent of an MCP `outputSchema`).
 // The real server should declare these as `outputSchema` and return matching
@@ -52,7 +57,7 @@ export function followPlanResult(
   // No token → preview. Hand back a deterministic mock token to thread back on commit.
   // The mock does NOT verify the token (that is the real server's job).
   if (!input.confirmation_token) {
-    return { dry_run: true, operations: [op], total_requested: input.count, all_sufficient: pct <= 10, confirmation_token: "mock-confirm" };
+    return { dry_run: true, operations: [op], total_requested: input.count, all_sufficient: pct <= 10, confirmation_token: MOCK_CONFIRMATION_TOKEN };
   }
   // Token present → commit. Keep mirroring the server's shortfall>10% reject offline.
   if (pct > 10) return { error: "shortfall_exceeds_threshold", operations: [op] };

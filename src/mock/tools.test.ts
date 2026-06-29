@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { balancePayload, followPlanResult, defaultState, toolResult } from "./tools.js";
+import { balancePayload, followPlanResult, defaultState, toolResult, MOCK_CONFIRMATION_TOKEN } from "./tools.js";
 
 describe("mock tools", () => {
   it("balance payload", () => {
@@ -9,15 +9,16 @@ describe("mock tools", () => {
     const r = followPlanResult({ ...defaultState(), pool: 150 }, { username: "laura", count: 200 }) as any;
     expect(r.dry_run).toBe(true);
     expect(r.operations[0]).toMatchObject({ would_select: 150, shortfall: 50 });
-    expect(typeof r.confirmation_token).toBe("string");
+    expect(r.confirmation_token).toBe(MOCK_CONFIRMATION_TOKEN);
   });
-  it("commits when shortfall <=10% and a token is present", () => {
-    const r = followPlanResult(defaultState(), { username: "laura", count: 200, confirmation_token: "mock-confirm" }) as any;
+  it("commits when shortfall <=10% and the preview token is threaded back", () => {
+    const preview = followPlanResult(defaultState(), { username: "laura", count: 200 }) as any;
+    const r = followPlanResult(defaultState(), { username: "laura", count: 200, confirmation_token: preview.confirmation_token }) as any;
     expect(r).toMatchObject({ status: "created" });
     expect(typeof r.plan_id).toBe("string");
   });
   it("rejects a commit when shortfall >10%", () => {
-    const r = followPlanResult({ ...defaultState(), pool: 100 }, { username: "laura", count: 200, confirmation_token: "mock-confirm" }) as any;
+    const r = followPlanResult({ ...defaultState(), pool: 100 }, { username: "laura", count: 200, confirmation_token: MOCK_CONFIRMATION_TOKEN }) as any;
     expect(r).toMatchObject({ error: "shortfall_exceeds_threshold" });
   });
   it("toolResult emits structuredContent AND a text fallback (MCP structured output)", () => {
