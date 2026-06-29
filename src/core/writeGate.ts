@@ -32,18 +32,17 @@ export function makeWriteGate(policy: WriteGatePolicy) {
       return { behavior: "deny", message: `tool ${toolName} is not a spreadx tool` };
     }
 
-    // A spreadx write tool — either known (in the registry) or unknown (added
-    // server-side after this client shipped). Known writes expose a side-effect-free
-    // dry-run preview (confirm:false). An UNKNOWN spreadx tool gets no free pass:
-    // its semantics are unknown, so it always requires approval — fail SAFE, not
-    // fail BROKEN. (Server-supplied readOnly/destructive hints are deliberately not
-    // trusted here; the MCP spec treats them as advisory, not a security boundary.)
+    // A spreadx write tool — known (in the registry) or unknown. Known writes
+    // expose a side-effect-free preview: a call with NO confirmation_token. An
+    // UNKNOWN spreadx tool gets no free pass — its semantics are unknown, so it
+    // always requires approval (fail SAFE). Server-supplied readOnly/destructive
+    // hints are deliberately not trusted (MCP spec: advisory, not a boundary).
     const spec = specFor(toolName);
-    if (spec && input.confirm !== true) {
+    if (spec && !input.confirmation_token) {
       return { behavior: "allow", updatedInput: input };
     }
 
-    // Real write: confirm=true on a known write, or any call to an unknown spreadx tool.
+    // Real write: a known write carrying a confirmation_token, or any unknown spreadx tool.
     // Caps apply only to known writes that declare one; they cannot be overridden by approval.
     if (spec?.capKey) {
       const cap = policy.caps[spec.capKey];

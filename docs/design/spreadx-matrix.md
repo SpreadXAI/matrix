@@ -18,7 +18,7 @@ This repo is the **consumer side** of SpreadX's "agent acts on behalf of the use
 ## Design principles (this review's baseline: avoid over-engineering)
 
 1. **The contract lives in the tools; the Skill only polishes.** The hard contract — dry-run / confirm / reject-if-shortfall>10% — is written into the **server tools' own descriptions**. Codex obeys it with no skill; the Claude-side Skill only adds phrasing. **One contract, maintained once.**
-2. **The safety boundary is deterministic code, not the LLM.** On the headless path the only thing that can authorize a real write (`confirm=true`) is the harness `canUseTool` gate (human approval + amount caps). The model may *propose* anything but can never *execute* a write the gate denies.
+2. **The safety boundary is deterministic code, not the LLM.** On the headless path the only thing that can authorize a real write (a `confirmation_token`) is the harness `canUseTool` gate (human approval + amount caps). The model may *propose* anything but can never *execute* a write the gate denies.
 3. **The client does not duplicate server authorization.** Scope checks, the shortfall>10% rejection, rate limiting, and the 60s JWT TTL all live server-side. The client gate adds only "human-in-the-loop" + "amount caps", and only on the headless autonomous path.
 4. **Use what the SDK already provides instead of adding dependencies.** The local mock uses the Agent SDK's own **in-process MCP server** — no `@modelcontextprotocol/sdk`, no hand-rolled HTTP transport.
 
@@ -56,13 +56,13 @@ This repo is the **consumer side** of SpreadX's "agent acts on behalf of the use
 - `matrix` CLI: free-text passthrough (`matrix "Check my balance"` / `matrix "Add 200 followers for @laura"`); in interactive mode writes go through a stdin approval.
 - **Deterministic write-gate semantics**:
   - Read tools (`get_balance`/`list_orders`/`get_order`/`list_plans`/`get_plan`) → allow directly.
-  - A write tool with `confirm` not true (preview) → allow (the preview has no side effects).
-  - A write tool with `confirm=true` → check caps first (over `MATRIX_MAX_FOLLOW`/`MATRIX_MAX_ENGAGEMENT` → deny); interactive → ask the human; headless → allow only if `MATRIX_AUTO_APPROVE=1` and within cap, else deny.
+  - A write tool with no `confirmation_token` (preview) → allow (the preview has no side effects).
+  - A write tool with a `confirmation_token` present → check caps first (over `MATRIX_MAX_FOLLOW`/`MATRIX_MAX_ENGAGEMENT` → deny); interactive → ask the human; headless → allow only if `MATRIX_AUTO_APPROVE=1` and within cap, else deny.
   - Any tool outside the `mcp__spreadx__*` namespace → deny (allowlist). An *unknown* spreadx tool fails safe: it is treated as a write and always requires approval.
 
 ### 3. Local dev mock (dev-only)
 - An Agent SDK in-process MCP server that implements only **`get_balance` + `create_follow_plan`** (enough to exercise a read + the two-step write).
-  `create_follow_plan` mirrors the server's "reject `confirm=true` when shortfall>10%" guard.
+  `create_follow_plan` mirrors the server's "reject a commit when shortfall>10%" guard.
 - Active only when `SPREADX_MCP_URL` points at the mock. **Discardable once platform staging is live.**
 
 ## Structured tool output
@@ -97,7 +97,7 @@ MCP structured tool output (spec 2025-06-18, STABLE) is the recommended way to r
 
 | Layer | Enforced by | What it covers |
 |---|---|---|
-| Server (authoritative) | `spreadx-mcp-user` | scope checks, reject `confirm` when shortfall>10%, rate limiting, the 60s platform-JWT TTL, revocation at the AS |
+| Server (authoritative) | `spreadx-mcp-user` | scope checks, reject a commit when shortfall>10%, rate limiting, the 60s platform-JWT TTL, revocation at the AS |
 | Harness write gate (deterministic) | this repo's `canUseTool` | human approval + amount caps before a real write; **the only headless safety gate** |
 | Editor-native confirmation | Claude plan mode / Codex confirm | the second human gate in interactive use |
 

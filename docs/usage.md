@@ -159,11 +159,11 @@ matrix "How many followers has plan 7f3a… gained?"
 ```bash
 matrix "Add 200 crypto English-speaking followers for @laura"
 ```
-The agent calls `create_follow_plan(confirm:false)` → shows the pool size, would-select, shortfall band → asks you to confirm → on approval calls `confirm:true`. In **interactive** mode you get a `y/N` prompt before the real write:
+The agent calls `create_follow_plan` with no `confirmation_token` → shows the pool size, would-select, shortfall band → asks you to confirm → on approval calls again with the `confirmation_token` from the preview. In **interactive** mode you get a `y/N` prompt before the real write:
 
 ```
 ⚠️  Approve write?
-mcp__spreadx__create_follow_plan {"username":"laura","count":200,"confirm":true}
+mcp__spreadx__create_follow_plan {"username":"laura","count":200,"confirmation_token":"<from preview>"}
 [y/N]
 ```
 
@@ -194,8 +194,8 @@ tool call
  ├─ read tool (get_balance/list_orders/get_order/list_plans/get_plan) ─────────▶ ALLOW
  ├─ not an mcp__spreadx__* tool ───────────────────────────────────────────────▶ DENY
  └─ write tool (create_follow_plan / create_engagement_plan)
-      ├─ confirm ≠ true  (preview) ───────────────────────────────────────────▶ ALLOW  (no side effects)
-      └─ confirm = true  (real write)
+      ├─ no confirmation_token  (preview) ────────────────────────────────▶ ALLOW  (no side effects)
+      └─ confirmation_token present  (real write)
            ├─ count invalid / < 1 / > cap ──────────────────────────────────▶ DENY   (fail closed)
            ├─ headless: MATRIX_AUTO_APPROVE=1 ? ──────────────────── ALLOW : DENY
            └─ interactive: stdin y/N ─────────────────────────────── ALLOW : DENY
@@ -209,7 +209,7 @@ The model cannot route around this — write tools are excluded from the SDK's `
 
 `SPREADX_MCP_URL=mock` swaps the remote server for an in-process MCP server (`src/mock/server.ts`) so you can develop and demo offline.
 
-- **Implements:** `get_balance` and `create_follow_plan` (incl. the dry-run preview and the server's `shortfall > 10% ⇒ reject confirm:true` guard).
+- **Implements:** `get_balance` and `create_follow_plan` (incl. the dry-run preview and the server's `shortfall > 10% ⇒ reject-on-commit` guard).
 - **Does not implement:** `list_orders`, `get_order`, `list_plans`, `get_plan`, `create_engagement_plan`. Asking for orders or a like against the mock will fail — verify those against the real server (`list_plans`/`get_plan` already ship in `spreadx-mcp-user`).
 - It's **dev-only** and throwaway once the real server is deployed.
 

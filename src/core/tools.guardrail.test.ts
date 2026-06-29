@@ -22,7 +22,7 @@ function loadManifest(): Set<string> {
 /**
  * Bare tool names from each row of the `## Tools` table in the skill. Scoped to
  * that one markdown table → zero false positives (the rest of the file backticks
- * many non-tool tokens: confirm/open/target/tags/plan_id/pool_size/…).
+ * many non-tool tokens: confirmation_token/open/target/tags/plan_id/pool_size/…).
  */
 function skillTableTools(): string[] {
   const skill = readFileSync(

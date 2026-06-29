@@ -9,8 +9,9 @@ import { defaultTokenStore } from "../auth/store.js";
 import type { TokenStore } from "../auth/tokenStore.js";
 
 const SYSTEM_APPEND = `You operate a SpreadX account via the mcp__spreadx__* tools.
-ALWAYS preview a write tool with confirm:false first, present the shortfall band, and only
-call confirm:true after approval. Never bypass the two-step protocol.`;
+ALWAYS preview a write tool with no confirmation_token first, present the confirm dialog,
+and only commit by passing the confirmation_token the preview returned. Never bypass the
+preview-then-commit handshake.`;
 
 // Only READ tools are auto-allowed (derived from the tool registry). Write tools — and
 // any unknown spreadx tool — are deliberately EXCLUDED: the SDK runs allowedTools without

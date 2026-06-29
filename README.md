@@ -105,8 +105,8 @@ Once installed, the loop for any task is the same four phases:
 
 1. **Authorize (once)** — the client runs the OAuth flow in your browser. The grant is held by the authorization server; you won't log in again.
 2. **Ask in natural language** — the `spreadx-agent` Skill maps your request to the right `mcp__spreadx__*` tool. Reads return immediately.
-3. **Preview before writing** — for a follow/engagement plan, the agent calls the tool with `confirm:false` first and shows you the dry-run: pool size, would-select, **shortfall band** (`≤5%` proceed · `5–10%` ask · `>10%` don't), and ETA.
-4. **Approve, then execute** — on your go-ahead it re-calls with `confirm:true`. In the harness this passes through the gate (your `y/N`, or headless auto-approve within caps); in editors it's the client's own approval UI. The server rejects any write whose shortfall exceeds 10%.
+3. **Preview before writing** — for a follow/engagement plan, the agent calls the tool with no `confirmation_token` first and shows you the dry-run (and a confirm dialog: target, count, ETA, credits): pool size, would-select, **shortfall band** (`≤5%` proceed · `5–10%` ask · `>10%` don't), and ETA.
+4. **Approve, then execute** — on your go-ahead it re-calls with the preview's `confirmation_token`. In the harness this passes through the gate (your `y/N`, or headless auto-approve within caps); in editors it's the client's own approval UI. The server rejects any write whose shortfall exceeds 10%.
 
 Then **check status** (`list_plans` to enumerate, `get_plan` for one) any time. The same workflow covers `create_follow_plan` (add followers) and `create_engagement_plan` (like / retweet / comment).
 
@@ -147,7 +147,7 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 - `src/harness/{client,cli}.ts` — the Agent SDK harness + `matrix` CLI
 - `src/mock/` — in-process dev mock (balance + follow), so the harness runs offline
 
-**The safety gate** (harness): read tools and write *previews* are auto-allowed; a real write (`confirm:true`) must pass an amount cap (`MATRIX_MAX_FOLLOW` / `MATRIX_MAX_ENGAGEMENT`) and then approval (interactive `y/N`, or `MATRIX_AUTO_APPROVE=1` headless). It **fails closed** on a missing/invalid count or any non-spreadx tool, and write tools are deliberately kept out of the SDK's `allowedTools` so they can't be auto-approved around the gate. Enforced by code, locked by tests — independent of the model.
+**The safety gate** (harness): read tools and write *previews* are auto-allowed; a real write (a call carrying a `confirmation_token`) must pass an amount cap (`MATRIX_MAX_FOLLOW` / `MATRIX_MAX_ENGAGEMENT`) and then approval (interactive `y/N`, or `MATRIX_AUTO_APPROVE=1` headless). It **fails closed** on a missing/invalid count or any non-spreadx tool, and write tools are deliberately kept out of the SDK's `allowedTools` so they can't be auto-approved around the gate. Enforced by code, locked by tests — independent of the model.
 
 ---
 

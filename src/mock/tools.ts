@@ -6,6 +6,11 @@ export function defaultState(): MockState {
 
 let planSeq = 0;
 
+/** Deterministic token the preview hands back for the caller to thread into a commit.
+ *  The mock never verifies it (token validity is the real server's job) — it only
+ *  proves the preview→commit round-trip threads the same value. */
+export const MOCK_CONFIRMATION_TOKEN = "mock-confirm";
+
 // ---------------------------------------------------------------------------
 // Typed output contracts (the TS equivalent of an MCP `outputSchema`).
 // The real server should declare these as `outputSchema` and return matching
@@ -28,7 +33,7 @@ export interface FollowOp {
 }
 
 export type FollowPlanOutput =
-  | { dry_run: true; operations: FollowOp[]; total_requested: number; all_sufficient: boolean }
+  | { dry_run: true; operations: FollowOp[]; total_requested: number; all_sufficient: boolean; confirmation_token: string }
   | { plan_id: string; status: "created" }
   | { error: "shortfall_exceeds_threshold"; operations: FollowOp[] };
 
@@ -42,16 +47,19 @@ export function balancePayload(state: MockState): BalanceOutput {
 
 export function followPlanResult(
   state: MockState,
-  input: { username: string; count: number; confirm?: boolean },
+  input: { username: string; count: number; confirmation_token?: string },
 ): FollowPlanOutput {
   const wouldSelect = Math.min(input.count, state.pool);
   const shortfall = Math.max(0, input.count - wouldSelect);
   const pct = input.count === 0 ? 0 : (shortfall / input.count) * 100;
   const op: FollowOp = { type: "follow", pool_size: state.pool, would_select: wouldSelect, shortfall, sufficient: pct <= 10 };
 
-  if (!input.confirm) {
-    return { dry_run: true, operations: [op], total_requested: input.count, all_sufficient: pct <= 10 };
+  // No token → preview. Hand back a deterministic mock token to thread back on commit.
+  // The mock does NOT verify the token (that is the real server's job).
+  if (!input.confirmation_token) {
+    return { dry_run: true, operations: [op], total_requested: input.count, all_sufficient: pct <= 10, confirmation_token: MOCK_CONFIRMATION_TOKEN };
   }
+  // Token present → commit. Keep mirroring the server's shortfall>10% reject offline.
   if (pct > 10) return { error: "shortfall_exceeds_threshold", operations: [op] };
   planSeq += 1;
   return { plan_id: `mock-plan-${planSeq}`, status: "created" };
