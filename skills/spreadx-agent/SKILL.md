@@ -38,11 +38,23 @@ Compute `pct = shortfall / requested × 100` for each operation, then act on the
 | `5–10%` | pool is slightly tight | ask whether to proceed, or lower the count to match the pool |
 | `>10%` | pool is insufficient | do not proceed — offer to lower the count or relax `tags`. The server also rejects `confirm: true` above 10%. |
 
+### Speed presets
+
+Both write tools take `speed` (default `standard`). It is one of three presets that collapse delivery pace into a single choice — same wording as the web velocity pills. The server rejects any other value.
+
+| `speed` | Label | Feel | Rate |
+|---|---|---|---|
+| `standard` | Standard / 标准 | human-like pace / 真人节奏 | ~30–50/day |
+| `boost` | Boost / 快速 | same-day delivery / 当日完成 | ~150–200/day |
+| `turbo` | Turbo / 爆发 | launch burst / 上新集中 | ~400–500/day |
+
+Pick from the user's wording — "尽快/今天就要/launch" → `boost` or `turbo`; "慢慢来/自然/真人" → `standard`. When pace is unstated, omit `speed` (defaults to `standard`); only ask if the count is large enough that the choice clearly matters. The preview's `eta_*` reflects the chosen speed, so surface it when confirming.
+
 ## Flows
 
 - **Balance** — call `get_balance`; report `points.balance`, `wallet_balance`, `package`.
-- **Add followers** (e.g. "add 200 crypto English followers to @laura") — `create_follow_plan({ username: "laura", count: 200, tags: ["crypto","en"], confirm: false })` → present the preview → on approval, repeat the call with `confirm: true` → report `{ plan_id, status }`.
-- **Engagement** (e.g. "like this tweet 50 times") — `create_engagement_plan({ tweet_url: "<url>", operations: [{ type: "like", count: 50 }], confirm: false })` → preview → approval → `confirm: true`.
+- **Add followers** (e.g. "add 200 crypto English followers to @laura, fast") — `create_follow_plan({ username: "laura", count: 200, tags: ["crypto","en"], speed: "boost", confirm: false })` → present the preview (numbers + shortfall + `eta_*`) → on approval, repeat the call with `confirm: true` → report `{ plan_id, status }`. Omit `speed` when pace is unstated.
+- **Engagement** (e.g. "like this tweet 50 times") — `create_engagement_plan({ tweet_url: "<url>", operations: [{ type: "like", count: 50 }], confirm: false })` → preview → approval → `confirm: true`. Add `speed` (same presets) when the user signals urgency.
 - **Check plans** (e.g. "how are my campaigns doing", "list my plans") — `list_plans({ status_group?, target?, limit? })` returns a newest-first page (`plans[]` + `next_cursor`). Every row already carries progress (`total_items` / `completed_items` / `failed_items`), so summarize straight from the list — no per-plan fan-out. For one plan's detail, `get_plan({ plan_id })`. This is also the follow-up after a `create_*_plan` returns a `plan_id` (the "check status any time" loop).
   - `status_group` is one of `open | done | failed | cancelled | partial` (the server expands these, e.g. `open` → pending/executing/paused). Pass only these tokens; do not invent an `active`/`completed` taxonomy.
   - `target` filters by a Twitter handle. `next_cursor` is opaque — pass it back verbatim to page; never build or parse it.
