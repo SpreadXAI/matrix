@@ -9,7 +9,7 @@
     {
       "name": "spreadx-matrix",
       "description": "Operate a SpreadX account from your agent — balance, orders, follow, like, plan tracking — via the spreadx MCP server, with a dry-run→confirm safety protocol.",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "source": {
         "source": "github",
         "repo": "SpreadXAI/matrix"

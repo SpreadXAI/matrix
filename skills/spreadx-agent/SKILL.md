@@ -39,6 +39,7 @@ Mirror the web confirm dialogs; render labels in the user's language.
 |---|---|
 | Target Username | `@<username>` (`operations[].target`) |
 | Follower Count | `operations[].count` |
+| Speed | the chosen preset's label (`标准`/`快速`/`爆发`) |
 | Estimated completion | `eta_finish` → `Ready in ~Nd` (≥24h) / `Ready in ~Nh` |
 | Estimated credits | `points_cost_estimate` |
 | Current credits | `get_balance` → `points.balance` |
@@ -70,12 +71,17 @@ Both write tools take `speed` (default `standard`) — one of three presets that
 
 Render the label in the user's current language from the meaning above. Match the product UI for the two languages it ships — English uses `Standard` / `Boost` / `Turbo`; Chinese uses `标准` / `快速` / `爆发`. For any other language, translate the meaning naturally.
 
-Infer the preset from the user's intent — words like "asap", "today", or "launch" → `boost` or `turbo`; "natural" or "slow" → `standard`. When pace is unstated, omit `speed` (defaults to `standard`); only ask if the count is large enough that the choice clearly matters. The preview's `eta_*` reflects the chosen speed, so surface it in the confirm dialog.
+**Choosing the preset — differs by tool:**
+
+- **Followers (`create_follow_plan`)** — never guess. Use a preset *only* when the user explicitly named one of the three: a wire code (`standard`/`boost`/`turbo`) or its label (`Standard`/`Boost`/`Turbo`, `标准`/`快速`/`爆发`). In every other case — pace unstated, **or** a vague pace like "asap" / "尽快" / "慢慢来" / "fast" that isn't exactly one of the three — **stop and ask first**: show the three presets (label + pace + rate, in the user's language) and have the user pick one. Only after they choose do you run the preview with the chosen `speed`. Do not preview before the speed is resolved.
+- **Engagement (`create_engagement_plan`)** — infer from intent: "asap"/"today"/"launch" → `boost`/`turbo`; "natural"/"slow" → `standard`. When pace is unstated, omit `speed` (defaults to `standard`). Add `speed` when the user signals urgency; no forced menu.
+
+The preview's `eta_*` reflects the chosen speed, and the follower confirm dialog shows the Speed row.
 
 ## Flows
 
 - **Balance** — call `get_balance`; report `points.balance`, `wallet_balance`, `package`.
-- **Add followers** (e.g. "add 200 crypto English followers to @laura, fast") — `create_follow_plan({ username: "laura", count: 200, tags: ["crypto","en"], speed: "boost" })` → present the preview (numbers + shortfall + `eta_*` + confirm dialog) → on approval, repeat the call **with the preview's `confirmation_token`** → report `{ plan_id, status }`. Omit `speed` when pace is unstated.
+- **Add followers** (e.g. "add 200 crypto English followers to @laura") — **resolve the speed first**: unless the user named one of the three presets (`standard`/`boost`/`turbo` or `标准`/`快速`/`爆发`), show the three options (label + pace + rate) and ask which to use; wait for the choice. Then preview with it — `create_follow_plan({ username: "laura", count: 200, tags: ["crypto","en"], speed: "<chosen>" })` → present the confirm dialog (incl. the **Speed** row) → on approval, repeat the call **with the preview's `confirmation_token`** → report `{ plan_id, status }`.
 - **Engagement** (e.g. "like this tweet 50 times") — `create_engagement_plan({ tweet_url: "<url>", operations: [{ type: "like", count: 50 }] })` → preview → approval → repeat **with the preview's `confirmation_token`**. Add `speed` (same presets) when the user signals urgency.
 - **Check plans** (e.g. "how are my campaigns doing", "list my plans") — `list_plans({ status_group?, target?, limit? })` returns a newest-first page (`plans[]` + `next_cursor`). Every row already carries progress (`total_items` / `completed_items` / `failed_items`), so summarize straight from the list — no per-plan fan-out. For one plan's detail, `get_plan({ plan_id })`. This is also the follow-up after a `create_*_plan` returns a `plan_id` (the "check status any time" loop).
   - `status_group` is one of `open | done | failed | cancelled | partial` (the server expands these, e.g. `open` → pending/executing/paused). Pass only these tokens; do not invent an `active`/`completed` taxonomy.
