@@ -20,8 +20,8 @@ export function createMockServer() {
       ),
       tool(
         "create_follow_plan",
-        "Create a follow growth plan. confirm=false returns a dry-run preview; confirm=true commits and is rejected if pool shortfall >10%.",
-        { username: z.string(), count: z.number().int().positive(), confirm: z.boolean().default(false) },
+        "Create a follow growth plan. Call with no confirmation_token to preview (returns a token); pass that token to commit. A commit is rejected if pool shortfall >10%.",
+        { username: z.string(), count: z.number().int().positive(), confirmation_token: z.string().optional() },
         async (args) => toolResult(followPlanResult(state, args)),
         { annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true } },
       ),
