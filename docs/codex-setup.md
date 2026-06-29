@@ -1,7 +1,7 @@
 # Using SpreadX from Codex
 
 Codex is an MCP client, so the `spreadx` tools work in Codex too. Codex also loads
-skills natively, but the dry-run/confirm contract is carried by each write tool's own
+skills natively, but the dry-run / confirmation-token contract is carried by each write tool's own
 `description`, so it holds **with or without** the skill. Codex writes are gated by the
 **server-side** shortfall guard + Codex's own confirm UI (the matrix `canUseTool` gate
 is harness-only).
