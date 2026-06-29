@@ -40,15 +40,17 @@ Compute `pct = shortfall / requested × 100` for each operation, then act on the
 
 ### Speed presets
 
-Both write tools take `speed` (default `standard`). It is one of three presets that collapse delivery pace into a single choice — same wording as the web velocity pills. The server rejects any other value.
+Both write tools take `speed` (default `standard`) — one of three presets that collapse delivery pace into a single choice. The server rejects any other value. **`standard` / `boost` / `turbo` are wire codes: send them verbatim, never translated.** Only the *label* shown to the user is translated.
 
-| `speed` | Label | Feel | Rate |
-|---|---|---|---|
-| `standard` | Standard / 标准 | human-like pace / 真人节奏 | ~30–50/day |
-| `boost` | Boost / 快速 | same-day delivery / 当日完成 | ~150–200/day |
-| `turbo` | Turbo / 爆发 | launch burst / 上新集中 | ~400–500/day |
+| `speed` | Meaning (semantic) | Rate |
+|---|---|---|
+| `standard` | human-like, natural pace | ~30–50/day |
+| `boost` | same-day delivery | ~150–200/day |
+| `turbo` | launch burst, front-loaded | ~400–500/day |
 
-Pick from the user's wording — "尽快/今天就要/launch" → `boost` or `turbo`; "慢慢来/自然/真人" → `standard`. When pace is unstated, omit `speed` (defaults to `standard`); only ask if the count is large enough that the choice clearly matters. The preview's `eta_*` reflects the chosen speed, so surface it when confirming.
+Render the label in the user's current language from the meaning above. Match the product UI for the two languages it ships — English uses `Standard` / `Boost` / `Turbo`; Chinese uses `标准` / `快速` / `爆发`. For any other language, translate the meaning naturally.
+
+Infer the preset from the user's intent — words like "asap", "today", or "launch" → `boost` or `turbo`; "natural" or "slow" → `standard`. When pace is unstated, omit `speed` (defaults to `standard`); only ask if the count is large enough that the choice clearly matters. The preview's `eta_*` reflects the chosen speed, so surface it when confirming.
 
 ## Flows
 
