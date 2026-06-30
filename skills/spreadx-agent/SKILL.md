@@ -7,6 +7,20 @@ description: Operates a user's SpreadX account via the spreadx MCP tools — bal
 
 Translate natural-language asks into `mcp__spreadx__*` tool calls. Always preview a write before committing it, and respond in the user's own language. Each tool's exact parameters live in its own MCP description/schema — rely on those rather than guessing; this skill covers *when* and *in what order* to call the tools, and how to handle the results.
 
+## Preflight — tools must be present (fail fast, never spelunk)
+
+These tools only exist if the `spreadx` MCP server connected. **If no `mcp__spreadx__*` tool is available in this session, STOP and ask the user to authorize — do not investigate.** Specifically:
+
+- **Do NOT** inspect local files, `~/.codex`/`~/.claude` directories, SQLite databases, the keychain, or process strings hunting for tokens or config. That is always wrong and wastes the session.
+- **Do NOT** spawn sub-runs / `codex exec` to "discover" the tools — a missing tool layer won't appear by retrying.
+- The cause is almost always **OAuth not valid at session start**. MCP clients attach server tools **when the session starts**, so a mid-session login does not retro-attach them.
+
+Tell the user (in their language) the one fix that works:
+
+> SpreadX isn't authorized yet (or the login expired). Run `codex mcp login spreadx` (include the `offline_access` scope), then **restart the Codex session** — tools only load at session start. Claude Code users: the first tool call triggers the browser OAuth automatically; if it doesn't, reopen the session. Still stuck? Use the standalone harness: `pnpm harness "Check my balance"`.
+
+Once any `mcp__spreadx__*` tool is present, proceed normally — no further auth prompts. (A `401` *during* a call is the separate re-authorize case in **Errors** below.)
+
 ## Tools (all named `mcp__spreadx__<name>`)
 
 | Intent | Tool |
