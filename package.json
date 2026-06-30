@@ -3,21 +3,29 @@
   "version": "0.4.1",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
-  "bin": { "matrix": "dist/harness/cli.js" },
+  "packageManager": "pnpm@10.12.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "matrix": "dist/harness/cli.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "harness": "tsx src/harness/cli.ts"
+    "harness": "tsx src/harness/cli.ts",
+    "check:version": "node scripts/check-version-bump.mjs",
+    "prepare": "husky"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "0.2.141",
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
+    "husky": "^9.1.7",
     "tsx": "^4.0.0",
     "typescript": "^5.5.0",
-    "vitest": "^2.0.0",
-    "@types/node": "^20.0.0"
+    "vitest": "^2.0.0"
   }
 }
