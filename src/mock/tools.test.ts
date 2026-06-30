@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { balancePayload, followPlanResult, defaultState, toolResult, MOCK_CONFIRMATION_TOKEN } from "./tools.js";
+import { balancePayload, followPlanResult, estimateFollowCostResult, defaultState, toolResult, MOCK_CONFIRMATION_TOKEN } from "./tools.js";
 
 describe("mock tools", () => {
   it("balance payload", () => {
@@ -29,5 +29,17 @@ describe("mock tools", () => {
     // …and content[].text carries the same JSON for clients that don't read structuredContent.
     expect(res.content[0]).toEqual({ type: "text", text: JSON.stringify(data) });
     expect(JSON.parse(res.content[0].text)).toEqual(res.structuredContent);
+  });
+  it("estimate prices all three speeds, scaling with count and differing by speed", () => {
+    const r = estimateFollowCostResult(defaultState(), { count: 200 });
+    expect(r.count).toBe(200);
+    expect(Object.keys(r.presets).sort()).toEqual(["boost", "standard", "turbo"]);
+    // Per-speed costs are integers and genuinely differ (standard < boost < turbo).
+    expect(r.presets.standard).toBeLessThan(r.presets.boost);
+    expect(r.presets.boost).toBeLessThan(r.presets.turbo);
+    for (const v of Object.values(r.presets)) expect(Number.isInteger(v)).toBe(true);
+    // Deterministic + scales with count.
+    expect(estimateFollowCostResult(defaultState(), { count: 200 })).toEqual(r);
+    expect(estimateFollowCostResult(defaultState(), { count: 400 }).presets.standard).toBe(r.presets.standard * 2);
   });
 });

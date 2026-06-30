@@ -23,6 +23,7 @@ export const TOOLS: readonly ToolSpec[] = [
   { name: "get_order", kind: "read" },
   { name: "list_plans", kind: "read" },
   { name: "get_plan", kind: "read" },
+  { name: "estimate_follow_cost", kind: "read" },
   { name: "create_follow_plan", kind: "write", capKey: "follow", countFrom: "count" },
   { name: "create_engagement_plan", kind: "write", capKey: "engagement", countFrom: "operations" },
 ];

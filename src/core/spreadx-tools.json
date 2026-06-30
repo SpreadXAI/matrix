@@ -1,1 +1,1 @@
-["create_engagement_plan","create_follow_plan","get_balance","get_order","get_plan","list_orders","list_plans","whoami"]
+["create_engagement_plan","create_follow_plan","estimate_follow_cost","get_balance","get_order","get_plan","list_orders","list_plans","whoami"]
