@@ -130,9 +130,11 @@ Talk to the agent in plain language; it maps your words to the right `mcp__sprea
 | List campaigns / plans | `List my plans` · `How are my campaigns doing?` |
 | Check one plan's progress | `Show plan plan_123` · `How's my @laura follower plan going?` |
 | Add followers | `Add 200 crypto English-speaking followers for @laura` · `Grow @laura by 500 followers, turbo` · `Get @bob 1,000 followers asap` |
-| Like / retweet / comment | `Like this tweet 50 times <url>` · `Retweet and like <url> 100× each` · `Comment on <url> 20 times` |
+| Like / retweet / comment | `Like this tweet 50 times <url>` · `Retweet and like <url> 100× each` · `viral_burst — like <url> 50×` |
 
-**Followers — picking a speed.** If you don't name a delivery speed, the agent shows a **three-preset menu** — `standard` / `boost` / `turbo` — with each tier's estimated completion time and its **credit cost** (priced per speed via `estimate_follow_cost`, since faster tiers cost more), so you can compare before choosing. Name a speed up front (e.g. *"…, turbo"*) to skip the menu. Engagement infers speed from urgency — no menu.
+**Followers — picking a speed.** If you don't name a delivery speed, the agent shows a **three-preset menu** — `standard` / `boost` / `turbo` — with each tier's estimated completion time and its **credit cost** (priced per speed via `estimate_follow_cost`, since faster tiers cost more), so you can compare before choosing. Name a speed up front (e.g. *"…, turbo"*) to skip the menu.
+
+**Engagement — picking a curve.** Engagement delivery is spread over a fixed **~48h** window; the speed selects the *shape*, not the pace — `viral_burst` (front-loaded), `natural_growth` (balanced, the default), or `sustained_heat` (even all-day). If you don't name one, the agent shows a **three-curve menu** with each curve's `Est. completion` (~48h) and `Est. credits` (per-op-type cost, e.g. `like 10×50 + comment 30×10 = …`). Both columns are **identical across curves** — only the delivery shape differs — so the menu is really a shape picker. Name a curve up front to skip the menu.
 
 **Writes are two-step.** Any `create_*` request is shown as a dry-run first (target, count, ETA, credits, pool shortfall) and only runs after you say yes — *`ok`* / *`go ahead`*. Say no to stop; nothing is written until you approve.
 
