@@ -1,6 +1,6 @@
 {
   "name": "spreadx-matrix",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Operate a SpreadX account from Codex — balance, orders, follow & like/retweet/comment plans, and tracking your plans — via the spreadx MCP server, with a dry-run→confirm safety protocol.",
   "author": {
     "name": "SpreadX",
