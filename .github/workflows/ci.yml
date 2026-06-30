@@ -35,3 +35,28 @@ jobs:
           fetch-depth: 0
       - run: git fetch origin "${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}"
       - run: node scripts/check-version-bump.mjs --base "origin/${{ github.event.pull_request.base.ref }}" --mode enforce
+
+  tag-release:
+    # On merge to main only: tag the package.json version + cut a GitHub Release.
+    # Idempotent — skips when the tag already exists, so re-runs and no-version-bump
+    # merges are safe. Tags only a green build (needs build-test).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag + release when the version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          if git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists — nothing to release."
+            exit 0
+          fi
+          echo "Releasing $VERSION at $GITHUB_SHA"
+          gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --generate-notes
