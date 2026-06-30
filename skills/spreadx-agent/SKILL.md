@@ -60,7 +60,7 @@ Mirror the web confirm dialogs; render labels in the user's language.
 | Current credits | `get_balance` → `points.balance` |
 | Remaining credits | Current − Estimated |
 
-**Engagement boost** (target is a tweet): same credits/completion rows, but the target row is **Tweet** (`operations[].target`), listing each op as `type × count` (e.g. like × 50).
+**Engagement boost** (target is a tweet): same credits rows, but the target row is **Tweet** (`operations[].target`), listing each op as `type × count` (e.g. like × 50), and the speed row reads **Curve** — the chosen engagement preset's label (`viral_burst` / `natural_growth` / `sustained_heat`), not a rate.
 
 Fetch Current credits via `get_balance` and compute Remaining yourself; the preview carries no balance. If `get_balance` is unavailable, show Estimated only and say the balance check was skipped.
 
@@ -76,7 +76,9 @@ Compute `pct = shortfall / requested × 100` for each operation, then act on the
 
 ### Speed presets
 
-Both write tools take `speed` (default `standard`) — one of three presets that collapse delivery pace into a single choice. The server rejects any other value. **`standard` / `boost` / `turbo` are wire codes: send them verbatim, never translated.** Only the *label* shown to the user is translated.
+The two write tools use **separate** speed vocabularies — followers pick a delivery *rate*, engagement picks a delivery *curve*. Each is sent verbatim as `speed`; only the *label* shown to the user is translated.
+
+**Followers (`create_follow_plan`)** take `speed` (default `standard`) — one of three rate presets that collapse delivery pace into a single choice. The server rejects any other value. **`standard` / `boost` / `turbo` are wire codes: send them verbatim, never translated.**
 
 | `speed` | Meaning (semantic) | Rate |
 |---|---|---|
@@ -105,18 +107,31 @@ Example menu for `count = 200` (every value below is read from that speed's dry-
 
 Pair the table with current/remaining credits from `get_balance` (e.g. `Current 1200 · Remaining …` against the chosen row).
 
+**Engagement (`create_engagement_plan`)** — `speed` selects a delivery **curve** over a fixed ~48h window (NOT a daily rate). Default `natural_growth`. Wire codes sent verbatim; only the label is translated.
+
+| `speed` | Curve (when delivery lands) | Best for |
+|---|---|---|
+| `viral_burst` | front-loaded: ~40% in first 30m, tapering across 48h | launch spike / breaking moment |
+| `natural_growth` *(default)* | balanced ramp, peak at 1–6h, across 48h | organic-looking default |
+| `sustained_heat` | even all-day presence across 48h | steady visibility / long campaigns |
+
+Engagement **cost does not change with speed** (cost is per op type: like, retweet, comment, bookmark, quote); all three curves finish within ~48h. Speed selects the *shape* of delivery only — so there is no per-speed cost/ETA fan-out: run a single dry-run preview regardless of curve.
+
 **Choosing the preset — differs by tool:**
 
 - **Followers (`create_follow_plan`)** — never guess. Use a preset *only* when the user explicitly named one of the three: a wire code (`standard`/`boost`/`turbo`) or its label (`Standard`/`Boost`/`Turbo`, `标准`/`快速`/`爆发`). In every other case — pace unstated, **or** a vague pace like "asap" / "尽快" / "慢慢来" / "fast" that isn't exactly one of the three — **stop and ask first**: render the three-preset comparison table (per *Per-speed estimate columns* above — ETA + credits both read from a per-speed `create_follow_plan` dry-run preview) paired with `get_balance`, and have the user pick one. The chosen speed's preview already carries the authoritative `eta_finish` + `confirmation_token`, so reuse it for the confirm dialog — no second preview needed (re-preview only if the token is later rejected as stale). Do not present the confirm dialog before the speed is resolved.
-- **Engagement (`create_engagement_plan`)** — infer from intent: "asap"/"today"/"launch" → `boost`/`turbo`; "natural"/"slow" → `standard`. When pace is unstated, omit `speed` (defaults to `standard`). Add `speed` when the user signals urgency; no forced menu.
+- **Engagement (`create_engagement_plan`)** — never guess. Use a preset *only* when the user explicitly named one of the three (`viral_burst` / `natural_growth` / `sustained_heat`, or a translated label). Otherwise — pace unstated, or a vague signal ("asap" / "尽快" / "spread it out") that isn't exactly one of the three — **stop and show the curve menu first** (the three-row Engagement table above, paired with `get_balance`) and wait for the pick. Because engagement cost is speed-independent, do **not** preview per speed: run **one** `create_engagement_plan` dry-run (no `confirmation_token`) for the cost + token, in parallel with `get_balance`. Do not present the confirm dialog before the speed is resolved.
 
-The preview's `eta_*` reflects the chosen speed, and the follower confirm dialog shows the Speed row.
+The follower confirm dialog shows the Speed row; the engagement confirm dialog shows a Curve row.
 
 ## Flows
 
 - **Balance** — call `get_balance`; report `points.balance`, `wallet_balance`, `package`.
 - **Add followers** (e.g. "add 200 crypto English followers to @laura") — **resolve the speed first**: unless the user named one of the three presets (`standard`/`boost`/`turbo` or `标准`/`快速`/`爆发`), show the three-preset comparison table — each preset with **Rate · Est. completion · Est. credits**, where completion and credits are read from a per-speed `create_follow_plan` dry-run preview (`eta_finish` + `points_cost_estimate`), the three previews run in parallel with `get_balance` for current/remaining — and ask which to use; wait for the choice. The chosen speed's preview already carries the authoritative `eta_finish` + `confirmation_token`, so go straight to the confirm dialog (incl. the **Speed** row) → on approval, commit by repeating the call **with that `confirmation_token`** → report `{ plan_id, status }`. (If the user named a preset up front, run that single preview and skip the menu.)
-- **Engagement** (e.g. "like this tweet 50 times") — `create_engagement_plan({ tweet_url: "<url>", operations: [{ type: "like", count: 50 }] })` → preview → approval → repeat **with the preview's `confirmation_token`**. Add `speed` (same presets) when the user signals urgency.
+- **Engagement** (e.g. "like this tweet 50 times") —
+  1. **Gather**: `tweet_url` + `operations[]` (each `{ type, count }`).
+  2. **Resolve speed**: if the user named one of `viral_burst` / `natural_growth` / `sustained_heat`, skip to step 3. Otherwise render the curve menu (the 3-row Engagement table) paired with `get_balance` and **wait** for the pick. Then run one `create_engagement_plan({ tweet_url: "<url>", operations: [{ type: "like", count: 50 }], speed: "natural_growth" })` dry-run (no `confirmation_token`) for cost + `confirmation_token`.
+  3. **Confirm**: show the **Engagement boost** dialog (Tweet target; each op as `type × count`; a **Curve** row = chosen preset label; Cost; Current credits; Remaining = `get_balance` − cost) → on approval, commit by repeating the call **with the preview's `confirmation_token`** → report `{ plan_id, status }`.
 - **Check plans** (e.g. "how are my campaigns doing", "list my plans") — `list_plans({ status_group?, target?, limit? })` returns a newest-first page (`plans[]` + `next_cursor`). Every row already carries progress (`total_items` / `completed_items` / `failed_items`), so summarize straight from the list — no per-plan fan-out. For one plan's detail, `get_plan({ plan_id })`. This is also the follow-up after a `create_*_plan` returns a `plan_id` (the "check status any time" loop).
   - `status_group` is one of `open | done | failed | cancelled | partial` (the server expands these, e.g. `open` → pending/executing/paused). Pass only these tokens; do not invent an `active`/`completed` taxonomy.
   - `target` filters by a Twitter handle. `next_cursor` is opaque — pass it back verbatim to page; never build or parse it.
