@@ -69,3 +69,31 @@ Like this tweet <url> 50 times
 Writes are previewed (dry-run) first; you approve, then they run. See the
 [main README](../README.md) and [usage guide](usage.md) for the full tool list and the
 two-step write protocol.
+
+## Troubleshooting — "the `spreadx` tools aren't there"
+
+`codex mcp list` shows `spreadx` enabled, but the model has no `mcp__spreadx__*` tools in
+the conversation. **This is an auth-at-startup problem, not a config problem.** Codex attaches
+an MCP server's tools **when the session starts**; if OAuth isn't valid at that moment the
+server fails to initialize and its tools never load. A mid-session `codex mcp login` refreshes
+the stored credentials but does **not** retro-attach tools to the running session.
+
+Fix — authorize once, then restart:
+
+```bash
+codex mcp login --scopes balance:read,orders:read,plans:write,offline_access spreadx
+# then start a NEW Codex session (tools load at session start)
+```
+
+The `offline_access` scope is the important part: it grants a refresh token, so Codex
+re-authorizes **silently** at every later startup and the login step effectively disappears
+(stay-logged-in, like a Figma integration). Without it, the token lapses and you hit this again.
+
+Do **not** debug it by inspecting `~/.codex`, SQLite databases, the keychain, or binary
+strings for tokens — that never surfaces the tools and only wastes the session. If you need
+results before restarting, use the repo's standalone harness, which authorizes independently
+of the Codex app's MCP layer:
+
+```bash
+pnpm harness "Check my balance"      # uses `matrix login`, not the Codex MCP session
+```

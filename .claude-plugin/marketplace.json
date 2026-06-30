@@ -9,7 +9,7 @@
     {
       "name": "spreadx-matrix",
       "description": "Operate a SpreadX account from your agent: check balance/orders, run follow / like-retweet-comment plans, and list/track your plans via the spreadx MCP server, with a dry-run→confirm safety protocol. Installs the spreadx-agent Skill and registers the remote MCP server (one-time OAuth).",
-      "version": "0.4.1",
+      "version": "0.4.2",
       "source": "./",
       "author": {
         "name": "SpreadX",
