@@ -76,7 +76,7 @@ Render the label in the user's current language from the meaning above. Match th
 
 - **Est. days** = `count ÷ median-per-day` (the table above), rounded; under 1 day → `<1`.
 - **Est. completion (ETA)** = `< 24h` → `~Nh` (relative hours only, no date); `≥ 24h` → `~N.Nd` (nearest half-day) **plus an approximate calendar date** from today + est. days, e.g. `~5d (≈ Jul 5)`. Keep the duration primary and the `≈` date a parenthetical — a median estimate, not a commitment. The authoritative figure is the preview's `eta_finish` once a speed is picked.
-- **Est. credits** = **per speed** from one `estimate_follow_cost({ count })` call — read `presets.standard` / `presets.boost` / `presets.turbo`. Credits are **not** speed-independent (e.g. turbo costs more than standard), so the three rows differ. One call returns all three presets; make it in parallel with `get_balance`. If the estimate is unavailable, show `—` for credits and say the credit estimate was skipped (days/ETA still render).
+- **Est. credits** = **per speed** from one `estimate_follow_cost({ count })` call — read `presets.standard` / `presets.boost` / `presets.turbo`. Credits are **not** speed-independent (e.g. turbo costs more than standard), so the three rows differ. One call returns all three presets; make it in parallel with `get_balance`.
 
 Example menu for `count = 200`:
 
