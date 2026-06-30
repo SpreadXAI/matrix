@@ -76,7 +76,7 @@ Compute `pct = shortfall / requested × 100` for each operation, then act on the
 
 ### Speed presets
 
-The two write tools use **separate** speed vocabularies — followers pick a delivery *rate*, engagement picks a delivery *curve*. Each is sent verbatim as `speed`; only the *label* shown to the user is translated.
+The two write tools use **separate** speed vocabularies — followers pick a delivery *rate*, engagement picks a delivery *curve*. In both, the code is sent verbatim as `speed`; only the *label* shown to the user is translated.
 
 **Followers (`create_follow_plan`)** take `speed` (default `standard`) — one of three rate presets that collapse delivery pace into a single choice. The server rejects any other value. **`standard` / `boost` / `turbo` are wire codes: send them verbatim, never translated.**
 
@@ -107,7 +107,7 @@ Example menu for `count = 200` (every value below is read from that speed's dry-
 
 Pair the table with current/remaining credits from `get_balance` (e.g. `Current 1200 · Remaining …` against the chosen row).
 
-**Engagement (`create_engagement_plan`)** — `speed` selects a delivery **curve** over a fixed ~48h window (NOT a daily rate). Default `natural_growth`. Wire codes sent verbatim; only the label is translated.
+**Engagement (`create_engagement_plan`)** — `speed` selects a delivery **curve** over a fixed ~48h window (NOT a daily rate). Default `natural_growth`.
 
 | `speed` | Curve (when delivery lands) | Best for |
 |---|---|---|
@@ -115,7 +115,7 @@ Pair the table with current/remaining credits from `get_balance` (e.g. `Current 
 | `natural_growth` *(default)* | balanced ramp, peak at 1–6h, across 48h | organic-looking default |
 | `sustained_heat` | even all-day presence across 48h | steady visibility / long campaigns |
 
-Engagement **cost does not change with speed** (cost is per op type: like, retweet, comment, bookmark, quote); all three curves finish within ~48h. Speed selects the *shape* of delivery only — so there is no per-speed cost/ETA fan-out: run a single dry-run preview regardless of curve.
+Engagement **cost does not change with speed** (cost is per op type: like, retweet, comment, bookmark, quote); all three curves finish within ~48h. Speed selects the *shape* of delivery only.
 
 **Choosing the preset — differs by tool:**
 
