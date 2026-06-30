@@ -172,7 +172,7 @@ mcp__spreadx__create_follow_plan {"username":"laura","count":200,"confirmation_t
 ```bash
 matrix "Like this tweet https://x.com/x/status/123 50 times"
 ```
-Unless you name a curve, the agent shows a **three-curve menu** — `viral_burst` / `natural_growth` (default) / `sustained_heat` — each with `Est. completion` (a fixed ~48h window) and `Est. credits` (per-op-type cost, e.g. `like 10×50 + comment 30×10 = …`). The curve only changes the delivery *shape*, so both columns are identical across the three — pick one or name it up front (e.g. `matrix "viral_burst — like <url> 50×"`). Then the usual preview → confirm → commit handshake runs, same as a follow plan.
+There is **no default curve** — like a follower speed, you pick one. Unless you name a curve, the agent shows a **three-curve menu** — `viral_burst` / `natural_growth` / `sustained_heat` — each with `Est. completion` (a fixed ~48h window) and `Est. credits` (per-op-type cost, e.g. `like 10×50 + comment 30×10 = …`). The curve only changes the delivery *shape*, so both columns are identical across the three — pick one or name it up front (e.g. `matrix "viral_burst — like <url> 50×"`). Then the usual preview → confirm → commit handshake runs, same as a follow plan.
 
 ### Headless / batch
 
