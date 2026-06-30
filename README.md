@@ -119,6 +119,25 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 
 ---
 
+## Usage — what to say
+
+Talk to the agent in plain language; it maps your words to the right `mcp__spreadx__*` tool. Reads return immediately; **writes always preview first and wait for your approval** (see the workflow above). Reply in any language — the agent answers in the one you used.
+
+| Want to… | Say something like… |
+|---|---|
+| Check balance / points | `Check my balance` · `How many points do I have?` · `What's in my package?` |
+| See recharge orders | `List my recharge orders` · `Show order ord_123` |
+| List campaigns / plans | `List my plans` · `How are my campaigns doing?` |
+| Check one plan's progress | `Show plan plan_123` · `How's my @laura follower plan going?` |
+| Add followers | `Add 200 crypto English-speaking followers for @laura` · `Grow @laura by 500 followers, turbo` · `Get @bob 1,000 followers asap` |
+| Like / retweet / comment | `Like this tweet 50 times <url>` · `Retweet and like <url> 100× each` · `Comment on <url> 20 times` |
+
+**Followers — picking a speed.** If you don't name a delivery speed, the agent shows a **three-preset menu** — `standard` / `boost` / `turbo` — with each tier's estimated completion time and its **credit cost** (priced per speed via `estimate_follow_cost`, since faster tiers cost more), so you can compare before choosing. Name a speed up front (e.g. *"…, turbo"*) to skip the menu. Engagement infers speed from urgency — no menu.
+
+**Writes are two-step.** Any `create_*` request is shown as a dry-run first (target, count, ETA, credits, pool shortfall) and only runs after you say yes — *`ok`* / *`go ahead`*. Say no to stop; nothing is written until you approve.
+
+---
+
 ## What's Inside
 
 **Tools** (exposed to the agent as `mcp__spreadx__<tool>`):
@@ -130,6 +149,7 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 | `get_order` | read | `orders:read` | one order |
 | `list_plans` | read | `orders:read` | the caller's plans (keyset paging) |
 | `get_plan` | read | `orders:read` | one plan incl. its progress |
+| `estimate_follow_cost` | read | `balance:read` | price a follower plan across all three speeds (for the speed menu) |
 | `create_follow_plan` | **write** | `plans:write` | add followers to a user |
 | `create_engagement_plan` | **write** | `plans:write` | like / retweet / comment on a tweet |
 
@@ -141,11 +161,11 @@ Agent:  [confirm] plan mock-plan-1 created ✅
 - `.mcp.json` — project-mode MCP mount (for cloning this repo directly)
 - `docs/codex-setup.md` — Codex setup
 - `src/auth/` — the OAuth client: `matrix login` (discovery + PKCE with a fixed pre-registered client id), refresh-token store (macOS Keychain / 0600 file), and `resolveAccessToken` (refresh-on-run)
-- `src/core/tools.ts` — the tool registry (single source of truth for the 7 tools; gate + harness derive from it)
+- `src/core/tools.ts` — the tool registry (single source of truth for the 8 tools; gate + harness derive from it)
 - `src/core/spreadx-tools.json` — vendored snapshot of the platform tool surface; the CI guardrail (`src/core/tools.guardrail.test.ts`) asserts the registry never names a tool the server doesn't expose (`registry ⊆ manifest`)
 - `src/core/writeGate.ts` — the deterministic `canUseTool` safety gate (fail-safe: unknown spreadx tools require approval, non-spreadx tools are denied)
 - `src/harness/{client,cli}.ts` — the Agent SDK harness + `matrix` CLI
-- `src/mock/` — in-process dev mock (balance + follow), so the harness runs offline
+- `src/mock/` — in-process dev mock (balance + follow + estimate), so the harness runs offline
 
 **The safety gate** (harness): read tools and write *previews* are auto-allowed; a real write (a call carrying a `confirmation_token`) must pass an amount cap (`MATRIX_MAX_FOLLOW` / `MATRIX_MAX_ENGAGEMENT`) and then approval (interactive `y/N`, or `MATRIX_AUTO_APPROVE=1` headless). It **fails closed** on a missing/invalid count or any non-spreadx tool, and write tools are deliberately kept out of the SDK's `allowedTools` so they can't be auto-approved around the gate. Enforced by code, locked by tests — independent of the model.
 

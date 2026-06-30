@@ -1,6 +1,6 @@
 import { tool, createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
-import { balancePayload, followPlanResult, defaultState, toolResult, type MockState } from "./tools.js";
+import { balancePayload, followPlanResult, estimateFollowCostResult, defaultState, toolResult, type MockState } from "./tools.js";
 
 export function createMockServer() {
   const state: MockState = defaultState();
@@ -16,6 +16,13 @@ export function createMockServer() {
         // Annotations model how the real server should describe this tool. (The gate
         // does NOT trust them — per the MCP spec they're advisory, not a security
         // boundary — but a well-behaved server annotates its tools.)
+        { annotations: { readOnlyHint: true, openWorldHint: true } },
+      ),
+      tool(
+        "estimate_follow_cost",
+        "Estimate the points cost of a follower plan for all three speed presets (standard/boost/turbo). Read-only; prices only, no plan created and no token minted.",
+        { count: z.number().int().positive() },
+        async (args) => toolResult(estimateFollowCostResult(state, args)),
         { annotations: { readOnlyHint: true, openWorldHint: true } },
       ),
       tool(

@@ -65,6 +65,28 @@ export function followPlanResult(
   return { plan_id: `mock-plan-${planSeq}`, status: "created" };
 }
 
+export interface EstimateFollowCostOutput {
+  count: number;
+  presets: { standard: number; boost: number; turbo: number }; // points_cost per speed
+}
+
+// Speed-tiered follower pricing: credits genuinely differ per speed (the real
+// numbers are the server's calculate-points output). Illustrative per-follower
+// rates here just keep the three columns visibly distinct in dev — not a pricing claim.
+export function estimateFollowCostResult(
+  _state: MockState,
+  input: { count: number },
+): EstimateFollowCostOutput {
+  return {
+    count: input.count,
+    presets: {
+      standard: Math.round(input.count * 3),
+      boost: Math.round(input.count * 3.5),
+      turbo: input.count * 4,
+    },
+  };
+}
+
 // MCP structured tool output (spec 2025-06-18, STABLE): return BOTH the
 // structured object (`structuredContent`, for programmatic consumption / schema
 // validation) AND the serialized JSON in a text block (backward-compatible
